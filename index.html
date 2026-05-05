@@ -416,6 +416,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
       <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">만족도 조사 결과</h2>
       <p style="font-size:0.82rem;color:#8FAF9F;margin-bottom:1.25rem">교사들이 제출한 일일 만족도 응답</p>
       <div class="row3" id="surv-stats"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem" id="surv-filter-btns"></div>
       <div id="surv-list"></div>
     </div>
   </div>
@@ -1124,34 +1125,84 @@ function renderTeachers() {
   });
 }
 
+var surveyFilter = 'all';
+
 function renderSurveys() {
-  var surveys=adminCache.surveys;
-  var total=surveys.length;
-  var avg=total?(surveys.reduce(function(a,s){return a+s.rating;},0)/total).toFixed(1):null;
-  var five=surveys.filter(function(s){return s.rating===5;}).length;
-  var ss=document.getElementById('surv-stats'); ss.innerHTML='';
-  [{val:avg?'★ '+avg:'—',label:'평균 별점',c:'#4D826C'},{val:total,label:'총 응답 수',c:'#1A2E24'},{val:five,label:'5점 응답',c:'#4D826C'}].forEach(function(s){
+  var surveys = adminCache.surveys;
+  var total = surveys.length;
+  var avg = total ? (surveys.reduce(function(a,s){return a+s.rating;},0)/total).toFixed(1) : null;
+  var five = surveys.filter(function(s){return s.rating===5;}).length;
+
+  // 통계 카드
+  var ss = document.getElementById('surv-stats'); ss.innerHTML='';
+  [{val:avg?'★ '+avg:'—',label:'평균 별점',c:'#4D826C'},
+   {val:total,label:'총 응답 수',c:'#1A2E24'},
+   {val:five,label:'5점 응답',c:'#4D826C'}
+  ].forEach(function(s){
     var card=ce('div'); card.className='card'; card.style.textAlign='center';
     card.appendChild(mk('div',{fontSize:'1.6rem',fontWeight:'700',color:s.c,letterSpacing:'-0.03em'},String(s.val)));
     card.appendChild(mk('div',{fontSize:'0.74rem',color:'#8FAF9F',marginTop:'4px'},s.label));
     ss.appendChild(card);
   });
-  var sl=document.getElementById('surv-list'); sl.innerHTML='';
-  if(!total){sl.appendChild(makeEmptyBox('아직 제출된 응답이 없습니다'));return;}
-  var box=ce('div'); box.style.cssText='background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden';
-  surveys.forEach(function(s,i){
-    var row=ce('div'); row.style.cssText='display:flex;align-items:center;padding:0.75rem 1rem;border-bottom:'+(i<surveys.length-1?'1px solid #F0F7F3':'none')+';gap:10px';
-    row.appendChild(mk('span',{fontWeight:'700',color:'#4D826C',fontSize:'0.84rem',flexShrink:'0'},'#'+s.userId));
-    row.appendChild(mk('span',{color:'#4D826C',fontSize:'0.84rem',flexShrink:'0'},'★'.repeat(s.rating)+'☆'.repeat(5-s.rating)));
-    row.appendChild(mk('span',{flex:'1',fontSize:'0.8rem',color:'#1A2E24',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},s.comment||'—'));
-    var del=ce('button'); del.className='del-btn'; del.textContent='삭제';
-    del.onclick=(function(sid){return function(){
-      askDel('응답 삭제','이 응답을 삭제할까요?',async function(){
+
+  // 프로그램별 필터 버튼
+  var fb = document.getElementById('surv-filter-btns'); fb.innerHTML='';
+  var filters = [
+    {id:'all', label:'전체'},
+    {id:'1', label:'P1 몸 회복'},
+    {id:'2', label:'P2 전이시간'},
+    {id:'3', label:'P3 명상'},
+    {id:'none', label:'미선택'}
+  ];
+  filters.forEach(function(f){
+    var btn = ce('button');
+    btn.style.cssText = 'padding:5px 13px;border-radius:20px;border:1px solid '+(surveyFilter===f.id?'#4D826C':'#E4EDE8')+';background:'+(surveyFilter===f.id?'#4D826C':'#fff')+';color:'+(surveyFilter===f.id?'#fff':'#8FAF9F')+';font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.14s';
+    btn.textContent = f.label;
+    // 해당 프로그램 응답 수 표시
+    var cnt = f.id==='all' ? total : surveys.filter(function(s){return (s.programId||'none')===f.id;}).length;
+    if(cnt>0) btn.textContent += ' ('+cnt+')';
+    btn.onclick = function(){ surveyFilter=f.id; renderSurveys(); };
+    fb.appendChild(btn);
+  });
+
+  // 필터 적용
+  var filtered = surveyFilter==='all' ? surveys : surveys.filter(function(s){return (s.programId||'none')===surveyFilter;});
+
+  var sl = document.getElementById('surv-list'); sl.innerHTML='';
+  if(!total){ sl.appendChild(makeEmptyBox('아직 제출된 응답이 없습니다')); return; }
+  if(!filtered.length){ sl.appendChild(makeEmptyBox('해당 프로그램 응답이 없습니다')); return; }
+
+  var PROG_COLOR = {'1':'#4D826C','2':'#3A6B57','3':'#2D5242'};
+  var PROG_LABEL = {'1':'P1 몸 회복','2':'P2 전이시간','3':'P3 명상','none':'미선택'};
+  var PROG_BG = {'1':'#E8F2EE','2':'#E3F0E8','3':'#DDE9E4','none':'#F4F7F4'};
+
+  var box = ce('div'); box.style.cssText='background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden';
+  filtered.forEach(function(s,i){
+    var row = ce('div'); row.style.cssText='display:flex;align-items:center;padding:0.75rem 1rem;border-bottom:'+(i<filtered.length-1?'1px solid #F0F7F3':'none')+';gap:8px';
+    // 교사 번호
+    row.appendChild(mk('span',{fontWeight:'700',color:'#4D826C',fontSize:'0.82rem',flexShrink:'0'},'#'+s.userId));
+    // 프로그램 뱃지
+    var pid = s.programId||'none';
+    var pbdg = ce('span');
+    pbdg.style.cssText = 'font-size:0.68rem;font-weight:600;color:'+(PROG_COLOR[pid]||'#8FAF9F')+';background:'+(PROG_BG[pid]||'#F4F7F4')+';padding:3px 9px;border-radius:8px;flex-shrink:0;white-space:nowrap';
+    pbdg.textContent = PROG_LABEL[pid]||'미선택';
+    row.appendChild(pbdg);
+    // 별점
+    row.appendChild(mk('span',{color:'#F4A826',fontSize:'0.82rem',flexShrink:'0',letterSpacing:'1px'},'★'.repeat(s.rating)+'☆'.repeat(5-s.rating)));
+    // 의견
+    row.appendChild(mk('span',{flex:'1',fontSize:'0.78rem',color:'#1A2E24',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},s.comment||'—'));
+    // 날짜
+    row.appendChild(mk('span',{fontSize:'0.7rem',color:'#B8D4C8',flexShrink:'0',whiteSpace:'nowrap'},fmtDate(s.createdAt)));
+    // 삭제
+    var del = ce('button'); del.className='del-btn'; del.textContent='삭제';
+    del.onclick = (function(sid){return function(){
+      askDel('응답 삭제','이 응답을 삭제할까요?', async function(){
         await db.collection('surveys').doc(sid).delete();
         closeModal(); await adminRefresh();
       });
     };})(s.id);
-    row.appendChild(del); box.appendChild(row);
+    row.appendChild(del);
+    box.appendChild(row);
   });
   sl.appendChild(box);
 }
