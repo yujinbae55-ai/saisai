@@ -117,7 +117,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
   <div class="login-wrap">
     <div class="login-box">
       <div style="text-align:center;margin-bottom:2rem">
-        <div style="width:50px;height:50px;background:#4D826C;border-radius:14px;margin:0 auto 1rem"></div>
+        <div class="logo-slot" data-size="60" data-radius="16" style="margin:0 auto 1rem;width:60px;height:60px"></div>
         <div style="font-size:1.9rem;font-weight:700;color:#1A2E24;letter-spacing:-0.04em">사이사이</div>
         <div style="margin-top:0.45rem;font-size:0.85rem;color:#8FAF9F">유아교사 웰니스 프로그램</div>
       </div>
@@ -146,7 +146,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
 <!-- ════════ TEACHER HOME ════════ -->
 <div class="page" id="p-home">
   <div class="hdr">
-    <div style="display:flex;align-items:center;gap:10px"><div class="sq"></div><span class="ht">사이사이</span></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="logo-slot" data-size="30" data-radius="9"></div><span class="ht">사이사이</span></div>
     <div style="display:flex;gap:10px;align-items:center">
       <span class="tag-grn">#<span id="u-code">1</span></span>
       <button class="ghost-btn" onclick="doLogout()">로그아웃</button>
@@ -324,7 +324,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
   <div class="adm-hdr">
     <div class="adm-top">
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:24px;height:24px;background:rgba(255,255,255,0.85);border-radius:7px"></div>
+        <div class="logo-slot" data-size="30" data-radius="8"></div>
         <span style="color:#fff;font-weight:700;font-size:1rem;letter-spacing:-0.03em">사이사이 관리자</span>
       </div>
       <div style="display:flex;gap:8px">
@@ -407,18 +407,76 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
     </div>
 
     <div class="adm-sec" id="asec-teach">
-      <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">교사 데이터 관리</h2>
-      <p style="font-size:0.82rem;color:#8FAF9F;margin-bottom:1.25rem">교사별 접속·활동 내역을 확인하고 데이터를 관리해요</p>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">교사 데이터 관리</h2>
+          <p style="font-size:0.82rem;color:#8FAF9F;margin:0">교사별 접속·활동 내역을 확인하고 데이터를 관리해요</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button onclick="exportTeachersExcel()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">📥 교사 현황</button>
+          <button onclick="exportActivitiesExcel()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">📥 활동 기록</button>
+        </div>
+      </div>
       <div id="teacher-cards" style="display:flex;flex-direction:column;gap:0.8rem"></div>
     </div>
 
     <div class="adm-sec" id="asec-surv">
-      <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">만족도 조사 결과</h2>
-      <p style="font-size:0.82rem;color:#8FAF9F;margin-bottom:1.25rem">교사들이 제출한 일일 만족도 응답</p>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">만족도 조사 결과</h2>
+          <p style="font-size:0.82rem;color:#8FAF9F;margin:0">교사들이 제출한 일일 만족도 응답</p>
+        </div>
+        <button onclick="exportSurveysExcel()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;display:flex;align-items:center;gap:5px">📥 엑셀 다운로드</button>
+      </div>
       <div class="row3" id="surv-stats"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem" id="surv-filter-btns"></div>
       <div id="surv-list"></div>
     </div>
+    <div class="adm-sec" id="asec-settings">
+      <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">앱 설정</h2>
+      <p style="font-size:0.82rem;color:#8FAF9F;margin-bottom:1.5rem">로고 및 앱 외관을 설정해요</p>
+
+      <!-- 로고 업로드 -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:0.5rem">로고 이미지</p>
+        <p style="font-size:0.78rem;color:#8FAF9F;margin-bottom:1rem">로그인 화면과 헤더에 표시되는 로고를 변경해요<br>권장 크기: 정사각형 (200×200px 이상), PNG/JPG</p>
+
+        <!-- 현재 로고 미리보기 -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:1.25rem">
+          <div id="logo-preview-big" style="width:72px;height:72px;border-radius:18px;background:#F4F7F4;border:1.5px dashed #C8DDD5;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+            <span style="font-size:0.72rem;color:#8FAF9F;text-align:center">미리보기</span>
+          </div>
+          <div>
+            <p style="font-size:0.82rem;font-weight:600;color:#1A2E24;margin-bottom:4px">현재 로고</p>
+            <p style="font-size:0.74rem;color:#8FAF9F" id="logo-current-label">기본 로고 사용 중</p>
+          </div>
+        </div>
+
+        <!-- 업로드 방식 선택 -->
+        <div style="display:flex;background:#F4F7F4;border-radius:9px;padding:3px;margin-bottom:1rem;gap:3px" id="logo-tab-bar">
+          <button onclick="switchLogoTab('file')" id="logo-t-file" style="flex:1;padding:0.5rem;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:600;background:#fff;color:#4D826C;box-shadow:0 1px 5px rgba(0,0,0,0.07);transition:all 0.14s">파일 업로드</button>
+          <button onclick="switchLogoTab('url')" id="logo-t-url" style="flex:1;padding:0.5rem;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:400;background:transparent;color:#8FAF9F;transition:all 0.14s">URL 입력</button>
+        </div>
+
+        <div id="logo-file-zone" style="border:1.5px dashed #C8DDD5;border-radius:10px;padding:1.25rem;text-align:center;background:#FAFCFA;margin-bottom:0.75rem;cursor:pointer" onclick="document.getElementById('logo-file-inp').click()">
+          <div style="font-size:1.75rem;margin-bottom:6px">🖼️</div>
+          <p style="font-size:0.84rem;color:#8FAF9F;margin:0" id="logo-file-label">클릭해서 로고 이미지 선택<br><span style="font-size:0.72rem">PNG, JPG, SVG · 정사각형 권장</span></p>
+          <input id="logo-file-inp" type="file" accept="image/*" style="display:none" onchange="onLogoFileSelect(this)">
+        </div>
+
+        <div id="logo-url-zone" style="display:none;margin-bottom:0.75rem">
+          <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">이미지 URL</label>
+          <input id="logo-url-inp" class="inp" placeholder="https://..." oninput="previewLogoUrl(this.value)">
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center">
+          <button id="logo-save-btn" onclick="saveLogo()" style="background:#4D826C;color:#fff;border:none;border-radius:10px;padding:0.7rem 1.5rem;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:inherit">적용하기</button>
+          <button onclick="resetLogo()" style="background:#F4F7F4;color:#8FAF9F;border:1px solid #E4EDE8;border-radius:10px;padding:0.7rem 1.25rem;font-size:0.88rem;cursor:pointer;font-family:inherit">기본값으로</button>
+          <span id="logo-msg" style="font-size:0.82rem"></span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -798,7 +856,7 @@ async function doSubmit() {
 ════════════════════════════════ */
 function buildAdminTabs() {
   var bar = document.getElementById('adm-tab-bar'); bar.innerHTML='';
-  [['ov','개요'],['prog','프로그램 편집'],['cont','콘텐츠'],['teach','교사 관리'],['surv','만족도']].forEach(function(t,i){
+  [['ov','개요'],['prog','프로그램 편집'],['cont','콘텐츠'],['teach','교사 관리'],['surv','만족도'],['settings','⚙️ 설정']].forEach(function(t,i){
     var b=ce('button'); b.className='adm-tab'+(i===0?' on':''); b.textContent=t[1];
     b.onclick=function(){
       document.querySelectorAll('.adm-tab').forEach(function(x){x.classList.remove('on');});
@@ -879,7 +937,7 @@ function renderOv() {
     var ico=ce('div'); ico.style.cssText='width:32px;height:32px;border-radius:8px;background:#4D826C;display:flex;align-items:center;justify-content:center;flex-shrink:0'; ico.appendChild(svgPlay());
     var inf=ce('div'); inf.style.cssText='flex:1;min-width:0';
     inf.appendChild(mk('p',{fontSize:'0.83rem',fontWeight:'600',color:'#1A2E24',margin:'0 0 1px',letterSpacing:'-0.02em',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},'교사 #'+a.userId+' · '+a.contentTitle));
-    inf.appendChild(mk('p',{fontSize:'0.72rem',color:'#8FAF9F',margin:'0'},fmtDate(a.startTime)+' · '+(a.duration?Math.round(a.duration/60)+'분':'진행 중')));
+    inf.appendChild(mk('p',{fontSize:'0.72rem',color:'#8FAF9F',margin:'0'},fmtDate(a.startTime)+' · '+(a.duration?fmtDurLong(a.duration):'진행 중')));
     var bdg=ce('span'); bdg.className=a.intensity==='low'?'bdg-low':'bdg-high'; bdg.textContent=a.intensity==='low'?'저강도':'고강도';
     var del=ce('button'); del.className='del-btn'; del.style.marginLeft='6px'; del.textContent='삭제';
     del.onclick=(function(act){return function(){
@@ -1029,7 +1087,19 @@ function fmtFull(iso){
   var d=new Date(iso);
   return (d.getMonth()+1)+'/'+d.getDate()+'('+DAYS[d.getDay()]+') '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
-function fmtDur(sec){ if(!sec) return '—'; var m=Math.floor(sec/60),s=sec%60; return m+'분'+(s?s+'초':''); }
+function fmtDur(sec){
+  if(!sec && sec!==0) return '—';
+  if(sec < 60) return sec+'초';
+  var m=Math.floor(sec/60), s=sec%60;
+  return m+'분 '+(s ? s+'초' : '');
+}
+function fmtDurLong(sec){
+  if(!sec && sec!==0) return '—';
+  var h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+  if(h>0) return h+'시간 '+m+'분 '+s+'초';
+  if(m>0) return m+'분 '+s+'초';
+  return s+'초';
+}
 
 function renderTeachers() {
   var wrap=document.getElementById('teacher-cards'); wrap.innerHTML='';
@@ -1037,7 +1107,10 @@ function renderTeachers() {
   if(!users.length){wrap.appendChild(makeEmptyBox('접속한 교사가 없습니다'));return;}
   users.forEach(function(u){
     var acts=adminCache.activities.filter(function(a){return a.userId===u.userId||a.userId===u.id;});
-    var totalMin=Math.round(acts.reduce(function(s,a){return s+(a.duration||0);},0)/60);
+    var totalSec=acts.reduce(function(s,a){return s+(a.duration||0);},0);
+    var totalMin=Math.floor(totalSec/60);
+    var totalSecRem=totalSec%60;
+    var totalTimeLabel = totalSec<60 ? totalSec+'초' : (totalMin+'분 '+(totalSecRem?totalSecRem+'초':''));
     var bp={'1':0,'2':0,'3':0}; acts.forEach(function(a){if(bp[a.programId]!==undefined)bp[a.programId]++;});
     var last=acts[0];
     var uid=u.userId||u.id;
@@ -1069,7 +1142,7 @@ function renderTeachers() {
     btns.appendChild(wBtn); btns.appendChild(dBtn);
     top.appendChild(av); top.appendChild(inf); top.appendChild(btns);
     var statsRow=ce('div'); statsRow.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);background:#F7FAF8;border-top:1px solid #F0F7F3';
-    [['총 활동',acts.length],['누적',totalMin+'분'],['P1',bp['1']],['P2',bp['2']],['P3',bp['3']]].forEach(function(s,i){
+    [['총 활동',acts.length],['누적',totalTimeLabel],['P1',bp['1']],['P2',bp['2']],['P3',bp['3']]].forEach(function(s,i){
       var cell=ce('div'); cell.style.cssText='text-align:center;padding:0.65rem 0.4rem;border-right:'+(i<4?'1px solid #EDF5EF':'none');
       cell.appendChild(mk('p',{fontSize:'0.95rem',fontWeight:'700',color:'#1A2E24',margin:'0 0 1px'},String(s[1])));
       cell.appendChild(mk('p',{fontSize:'0.68rem',color:'#8FAF9F',margin:'0'},s[0]));
@@ -1112,7 +1185,7 @@ function renderTeachers() {
         var pColors={'1':'#4D826C','2':'#3A6B57','3':'#2D5242'};
         var d=new Date(a.startTime);
         txt.appendChild(mk('p',{fontSize:'0.78rem',fontWeight:'600',color:pColors[a.programId]||'#4D826C',margin:'0 0 1px'},'P'+a.programId+' — '+a.contentTitle));
-        txt.appendChild(mk('p',{fontSize:'0.7rem',color:'#8FAF9F',margin:'0'},fmtFull(a.startTime)+' · '+fmtDur(a.duration)+(a.intensity==='low'?' · 저강도':' · 고강도')));
+        txt.appendChild(mk('p',{fontSize:'0.7rem',color:'#8FAF9F',margin:'0'},fmtFull(a.startTime)+' · '+fmtDurLong(a.duration)+(a.intensity==='low'?' · 저강도':' · 고강도')));
         item.appendChild(dot); item.appendChild(txt); timeline.appendChild(item);
       });
       detail.appendChild(timeline);
@@ -1251,6 +1324,223 @@ function askDel(title,msg,fn){
 }
 function closeModal(){document.getElementById('modal').style.display='none';pendingOk=null;}
 
+
+
+
+/* ── Logo Settings ── */
+var pendingLogoFile = null;
+var pendingLogoUrl = '';
+
+function switchLogoTab(mode) {
+  var isFile = mode === 'file';
+  document.getElementById('logo-file-zone').style.display = isFile ? 'block' : 'none';
+  document.getElementById('logo-url-zone').style.display = isFile ? 'none' : 'block';
+  var tf = document.getElementById('logo-t-file');
+  var tu = document.getElementById('logo-t-url');
+  tf.style.background = isFile ? '#fff' : 'transparent';
+  tf.style.color = isFile ? '#4D826C' : '#8FAF9F';
+  tf.style.fontWeight = isFile ? '600' : '400';
+  tf.style.boxShadow = isFile ? '0 1px 5px rgba(0,0,0,0.07)' : 'none';
+  tu.style.background = !isFile ? '#fff' : 'transparent';
+  tu.style.color = !isFile ? '#4D826C' : '#8FAF9F';
+  tu.style.fontWeight = !isFile ? '600' : '400';
+  tu.style.boxShadow = !isFile ? '0 1px 5px rgba(0,0,0,0.07)' : 'none';
+}
+
+function onLogoFileSelect(inp) {
+  if (!inp.files[0]) return;
+  pendingLogoFile = inp.files[0];
+  pendingLogoUrl = '';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var url = e.target.result;
+    updateLogoPreview(url);
+    pendingLogoUrl = url; // base64 미리보기용
+  };
+  reader.readAsDataURL(inp.files[0]);
+  document.getElementById('logo-file-label').textContent = '✓ ' + inp.files[0].name;
+}
+
+function previewLogoUrl(url) {
+  if (url) { updateLogoPreview(url); pendingLogoUrl = url; pendingLogoFile = null; }
+}
+
+function updateLogoPreview(url) {
+  var prev = document.getElementById('logo-preview-big');
+    var img = document.createElement('img');
+  img.src = url;
+  img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:16px';
+  img.onerror = function(){ prev.innerHTML = '<span style="font-size:0.72rem;color:#C0392B;text-align:center">이미지 오류</span>'; };
+  prev.innerHTML = '';
+  prev.appendChild(img);
+}
+
+async function saveLogo() {
+  var btn = document.getElementById('logo-save-btn');
+  var msg = document.getElementById('logo-msg');
+  if (!pendingLogoUrl) { msg.textContent = '⚠ 이미지를 선택해주세요'; msg.style.color='#C0392B'; return; }
+  btn.disabled = true; btn.textContent = '적용 중...';
+  try {
+    var finalUrl = pendingLogoUrl;
+    // 파일 업로드인 경우 Firebase Storage에 저장
+    if (pendingLogoFile) {
+      var storageRef = storage.ref('logo/app_logo_' + Date.now() + '.' + pendingLogoFile.name.split('.').pop());
+      await storageRef.put(pendingLogoFile);
+      finalUrl = await storageRef.getDownloadURL();
+    }
+    // Firestore에 저장 (모든 관리자가 공유)
+    await db.collection('appSettings').doc('logo').set({ url: finalUrl, updatedAt: new Date().toISOString() });
+    setLogoUrl(finalUrl);
+    document.getElementById('logo-current-label').textContent = '커스텀 로고 적용됨';
+    msg.textContent = '✓ 로고가 적용됐어요!'; msg.style.color='#4D826C';
+    setTimeout(function(){ msg.textContent=''; }, 3000);
+  } catch(e) {
+    msg.textContent = '✗ 오류: ' + e.message; msg.style.color='#C0392B';
+  }
+  btn.disabled = false; btn.textContent = '적용하기';
+}
+
+function resetLogo() {
+  localStorage.removeItem(LOGO_KEY);
+  pendingLogoFile = null; pendingLogoUrl = '';
+  renderAllLogos('');
+  document.getElementById('logo-preview-big').innerHTML = '<span style="font-size:0.72rem;color:#8FAF9F;text-align:center">미리보기</span>';
+  document.getElementById('logo-current-label').textContent = '기본 로고 사용 중';
+  document.getElementById('logo-msg').textContent = '기본값으로 초기화됐어요';
+  document.getElementById('logo-msg').style.color = '#4D826C';
+  setTimeout(function(){ document.getElementById('logo-msg').textContent=''; }, 2500);
+  // Firestore에서도 삭제
+  db.collection('appSettings').doc('logo').delete().catch(function(){});
+}
+
+// 앱 시작 시 저장된 로고 불러오기
+async function loadSavedLogo() {
+  try {
+    var cached = getLogoUrl();
+    if (cached) { renderAllLogos(cached); return; }
+    var snap = await db.collection('appSettings').doc('logo').get();
+    if (snap.exists) {
+      var url = snap.data().url;
+      setLogoUrl(url);
+    }
+  } catch(e) {}
+}
+
+
+/* ════════════════════════════════
+   EXCEL EXPORT
+════════════════════════════════ */
+function toCSV(rows) {
+  return rows.map(function(row) {
+    return row.map(function(cell) {
+      var s = String(cell === null || cell === undefined ? '' : cell);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }).join(',');
+  }).join('\n');
+}
+
+function downloadCSV(filename, rows) {
+  var bom = '\uFEFF'; // 한글 깨짐 방지
+  var csv = bom + toCSV(rows);
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+var PROG_NAME = {'1':'P1 몸 회복','2':'P2 전이시간','3':'P3 명상'};
+
+function exportTeachersExcel() {
+  var rows = [['교사코드','최초접속일','마지막접속일','총활동횟수','누적시간(초)','누적시간(분)','P1 몸회복(회)','P2 전이시간(회)','P3 명상(회)']];
+  adminCache.users.forEach(function(u) {
+    var acts = adminCache.activities.filter(function(a){return a.userId===u.userId||a.userId===u.id;});
+    var totalSec = acts.reduce(function(s,a){return s+(a.duration||0);},0);
+    var bp = {'1':0,'2':0,'3':0};
+    acts.forEach(function(a){if(bp[a.programId]!==undefined)bp[a.programId]++;});
+    rows.push([
+      u.userId||u.id,
+      fmtDate(u.createdAt),
+      fmtDate(u.lastSeenAt),
+      acts.length,
+      totalSec,
+      Math.round(totalSec/60),
+      bp['1'], bp['2'], bp['3']
+    ]);
+  });
+  downloadCSV('사이사이_교사데이터_'+new Date().toISOString().slice(0,10)+'.csv', rows);
+  showToast('📥 교사 데이터 다운로드 완료!');
+}
+
+function exportActivitiesExcel() {
+  var rows = [['교사코드','시작시간','종료시간','소요시간(초)','소요시간(분)','프로그램','강도','콘텐츠제목']];
+  adminCache.activities.forEach(function(a) {
+    rows.push([
+      a.userId,
+      a.startTime ? new Date(a.startTime).toLocaleString('ko-KR') : '',
+      a.endTime ? new Date(a.endTime).toLocaleString('ko-KR') : '미종료',
+      a.duration||0,
+      Math.round((a.duration||0)/60),
+      PROG_NAME[a.programId]||a.programId,
+      a.intensity==='low'?'저강도':'고강도',
+      a.contentTitle||''
+    ]);
+  });
+  downloadCSV('사이사이_활동기록_'+new Date().toISOString().slice(0,10)+'.csv', rows);
+  showToast('📥 활동 기록 다운로드 완료!');
+}
+
+function exportSurveysExcel() {
+  var PROG_LBL = {'1':'P1 몸 회복','2':'P2 전이시간','3':'P3 명상','none':'미선택','':'미선택'};
+  var rows = [['교사코드','별점','프로그램','의견','제출시간']];
+  adminCache.surveys.forEach(function(s) {
+    rows.push([
+      s.userId,
+      s.rating,
+      PROG_LBL[s.programId||'none']||'미선택',
+      s.comment||'',
+      s.createdAt ? new Date(s.createdAt).toLocaleString('ko-KR') : ''
+    ]);
+  });
+  downloadCSV('사이사이_만족도조사_'+new Date().toISOString().slice(0,10)+'.csv', rows);
+  showToast('📥 만족도 데이터 다운로드 완료!');
+}
+
+/* ════════════════════════════════
+   LOGO MANAGEMENT
+════════════════════════════════ */
+var LOGO_KEY = 'saisai_logo_url';
+
+function getLogoUrl() {
+  return localStorage.getItem(LOGO_KEY) || '';
+}
+
+function setLogoUrl(url) {
+  localStorage.setItem(LOGO_KEY, url);
+  renderAllLogos(url);
+}
+
+function renderAllLogos(url) {
+  document.querySelectorAll('.logo-slot').forEach(function(slot) {
+    var size = slot.dataset.size || '28';
+    var radius = slot.dataset.radius || '8';
+    if (url) {
+      slot.innerHTML = '<img src="'+url+'" style="width:'+size+'px;height:'+size+'px;border-radius:'+radius+'px;object-fit:cover;display:block">';
+    } else {
+      // 기본 초록 박스 (로고 없을 때)
+      slot.innerHTML = '<div style="width:'+size+'px;height:'+size+'px;background:#4D826C;border-radius:'+radius+'px"></div>';
+    }
+  });
+}
+
+// 페이지 로드 시 로고 적용
+document.addEventListener('DOMContentLoaded', function() {
+  renderAllLogos(getLogoUrl());
+});
 
 /* ════════════════════════════════
    MYPAGE
@@ -1402,7 +1692,7 @@ function showDayDetail(date, acts) {
     var ico=ce('div'); ico.style.cssText='width:36px;height:36px;border-radius:9px;background:#4D826C;display:flex;align-items:center;justify-content:center;flex-shrink:0'; ico.appendChild(svgPlay());
     var inf=ce('div'); inf.style.cssText='flex:1;min-width:0';
     inf.appendChild(mk('p',{fontSize:'0.88rem',fontWeight:'600',color:'#1A2E24',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},a.contentTitle||'—'));
-    inf.appendChild(mk('p',{fontSize:'0.72rem',color:'#8FAF9F',margin:'0'},String(new Date(a.startTime).getHours()).padStart(2,'0')+':'+String(new Date(a.startTime).getMinutes()).padStart(2,'0')+' · P'+a.programId+' · '+fmtDur(a.duration)+(a.intensity==='low'?' · 저강도':' · 고강도')));
+    inf.appendChild(mk('p',{fontSize:'0.72rem',color:'#8FAF9F',margin:'0'},String(new Date(a.startTime).getHours()).padStart(2,'0')+':'+String(new Date(a.startTime).getMinutes()).padStart(2,'0')+' · P'+a.programId+' · '+fmtDurLong(a.duration)+(a.intensity==='low'?' · 저강도':' · 고강도')));
     item.appendChild(ico); item.appendChild(inf); list.appendChild(item);
   });
   det.style.display='block';
@@ -1430,6 +1720,7 @@ var db, storage;
     // 기본 Firestore DB 사용 (Firebase 콘솔 기본값)
     storage = firebase.storage();
     console.log("Firebase 초기화 완료");
+    loadSavedLogo();
   } catch(e) {
     console.error("Firebase 초기화 실패:", e);
   }
