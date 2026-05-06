@@ -1667,8 +1667,27 @@ function renderCal() {
   }
   var monthMin=Math.round(monthActs.reduce(function(s,a){return s+(a.duration||0);},0)/60);
   var byP={'1':0,'2':0,'3':0}; monthActs.forEach(function(a){byP[a.programId]=(byP[a.programId]||0)+1;});
+  // 주요 활동 시간대 계산
+  var hourBucket = {};
+  monthActs.forEach(function(a){
+    var h = new Date(a.startTime).getHours();
+    hourBucket[h] = (hourBucket[h]||0) + 1;
+  });
+  var peakHour = Object.entries(hourBucket).sort(function(a,b){return b[1]-a[1];})[0];
+  function hourLabel(h) {
+    h = parseInt(h);
+    if (h >= 6 && h < 9)   return '오전 등원 준비 🌅';
+    if (h >= 9 && h < 12)  return '오전 활동 중 ☀️';
+    if (h >= 12 && h < 14) return '점심 시간 🍱';
+    if (h >= 14 && h < 17) return '오후 활동 중 🌤';
+    if (h >= 17 && h < 20) return '퇴근 전후 🌇';
+    if (h >= 20 && h < 24) return '저녁 시간 🌙';
+    return '새벽 시간 🌃';
+  }
+  var peakLabel = peakHour ? hourLabel(peakHour[0]) : '—';
+
   var summary=ce('div'); summary.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:8px';
-  [{v:monthActs.length,l:'총 활동'},{v:monthMin+'분',l:'총 시간'},{v:Object.values(actMap).length,l:'활동 일수'},{v:byP[Object.entries(byP).sort(function(a,b){return b[1]-a[1];})[0][0]]+'회',l:'최다 프로그램'}].forEach(function(s){
+  [{v:monthActs.length,l:'총 활동'},{v:monthMin+'분',l:'총 시간'},{v:Object.values(actMap).length,l:'활동 일수'},{v:peakLabel,l:'주 활동 시간대'}].forEach(function(s){
     var c=ce('div'); c.style.cssText='background:#fff;border-radius:10px;padding:10px;text-align:center;border:1px solid #E4EDE8';
     c.appendChild(mk('p',{fontSize:'1rem',fontWeight:'700',color:'#1A2E24',margin:'0 0 2px'},String(s.v)));
     c.appendChild(mk('p',{fontSize:'0.68rem',color:'#8FAF9F',margin:'0'},s.l));
