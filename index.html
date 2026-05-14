@@ -160,8 +160,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
     <div id="prog-cards" style="display:flex;flex-direction:column;gap:0.8rem;margin-bottom:0.9rem">
       <div class="loading"><div class="spinner"></div>불러오는 중...</div>
     </div>
-    <button class="dashed-btn" onclick="go('p-survey')">오늘의 만족도 조사 참여하기 →</button>
-    <button class="dashed-btn" onclick="openMypage()" style="margin-top:8px;color:#3A6B57;border-color:#B8D4C8">내 활동 기록 보기 →</button>
+    <button class="dashed-btn" onclick="openMypage()" style="color:#3A6B57;border-color:#B8D4C8">내 활동 기록 보기 →</button>
   </div>
 </div>
 
@@ -213,48 +212,6 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
         <path d="M2 2h5M2 2v5M16 2h-5M16 2v5M2 16h5M2 16v-5M16 16h-5M16 16v-5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
     </button>
-  </div>
-</div>
-
-<!-- ════════ SURVEY ════════ -->
-<div class="page" id="p-survey">
-  <div class="hdr">
-    <button class="back-btn" onclick="go('p-home')">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <span class="ht">만족도 조사</span>
-    <div style="width:32px"></div>
-  </div>
-  <div class="scroll">
-    <section style="margin-bottom:1.75rem">
-      <p style="font-size:0.76rem;font-weight:600;color:#4D826C;margin-bottom:0.7rem">오늘 참여한 프로그램</p>
-      <div class="row2" id="surv-prog-btns"></div>
-    </section>
-    <div class="card" style="margin-bottom:1rem;text-align:center">
-      <p style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">오늘 프로그램이 어떠셨나요?</p>
-      <p style="font-size:0.8rem;color:#8FAF9F;margin-bottom:1.25rem">별을 눌러 만족도를 알려주세요</p>
-      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:0.5rem" id="star-row"></div>
-      <p id="r-lbl" style="font-size:0.82rem;font-weight:600;color:#4D826C;min-height:1.2em;margin:0"></p>
-    </div>
-    <div class="card" style="margin-bottom:1.25rem">
-      <p style="font-size:0.8rem;font-weight:600;color:#4D826C;margin-bottom:0.65rem">추가 의견 <span style="color:#B8D4C8;font-weight:400">(선택)</span></p>
-      <textarea id="surv-comment" placeholder="솔직한 의견을 남겨주세요" rows="4" style="width:100%;border:1.5px solid #E4EDE8;border-radius:10px;padding:0.8rem;font-size:0.88rem;resize:vertical;color:#1A2E24;background:#FAFCFA;line-height:1.6;transition:border-color 0.15s"></textarea>
-    </div>
-    <button id="sub-btn" class="pri-btn" onclick="doSubmit()" disabled style="opacity:0.4;cursor:not-allowed">별점을 선택해주세요</button>
-  </div>
-</div>
-
-<!-- ════════ SURVEY DONE ════════ -->
-<div class="page" id="p-done">
-  <div style="flex:1;display:flex;align-items:center;justify-content:center;background:#F4F7F4;padding:2rem">
-    <div style="text-align:center">
-      <div style="width:60px;height:60px;background:#4D826C;border-radius:50%;margin:0 auto 1.25rem;display:flex;align-items:center;justify-content:center">
-        <svg width="26" height="20" viewBox="0 0 26 20" fill="none"><path d="M2 10l8 8L24 2" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <h2 style="font-size:1.4rem;font-weight:700;color:#1A2E24;margin-bottom:0.5rem;letter-spacing:-0.03em">감사합니다</h2>
-      <p style="color:#8FAF9F;font-size:0.9rem;margin-bottom:2rem">소중한 의견이 프로그램 개선에 활용됩니다.</p>
-      <button class="pri-btn" onclick="go('p-home')" style="max-width:180px;margin:0 auto;display:block">메인으로</button>
-    </div>
   </div>
 </div>
 
@@ -420,55 +377,65 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
       <div id="teacher-cards" style="display:flex;flex-direction:column;gap:0.8rem"></div>
     </div>
 
-    <div class="adm-sec" id="asec-surv">
+    <div class="adm-sec" id="asec-report">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;flex-wrap:wrap">
         <div>
-          <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">만족도 조사 결과</h2>
-          <p style="font-size:0.82rem;color:#8FAF9F;margin:0">교사들이 제출한 일일 만족도 응답</p>
+          <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">주간 리포트</h2>
+          <p style="font-size:0.82rem;color:#8FAF9F;margin:0">교사별 주간 활동 데이터를 바탕으로 리포트를 작성해요</p>
         </div>
-        <button onclick="exportSurveysExcel()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;display:flex;align-items:center;gap:5px">📥 엑셀 다운로드</button>
+        <button onclick="exportReportText()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">📋 텍스트 복사</button>
       </div>
-      <div class="row3" id="surv-stats"></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem" id="surv-filter-btns"></div>
-      <div id="surv-list"></div>
+      <div class="card" style="margin-bottom:1.25rem;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:140px">
+          <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">교사 선택</label>
+          <select id="report-user-sel" class="sel" onchange="onReportUserChange()">
+            <option value="">교사를 선택하세요</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">기준 주차</label>
+          <select id="report-week-sel" class="sel"></select>
+        </div>
+        <button onclick="generateReport()" style="background:#4D826C;color:#fff;border:none;border-radius:10px;padding:0.68rem 1.25rem;font-size:0.84rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">데이터 불러오기</button>
+      </div>
+      <div id="report-stat-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem"></div>
+      <div id="report-editor-wrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+          <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin:0">리포트 내용 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 자유롭게 수정 가능해요</span></p>
+          <div style="display:flex;gap:8px">
+            <button onclick="resetReportContent()" style="background:#F4F7F4;color:#8FAF9F;border:1px solid #E4EDE8;border-radius:8px;padding:5px 12px;font-size:0.76rem;cursor:pointer;font-family:inherit">초기화</button>
+            <button onclick="saveReport()" style="background:#4D826C;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">저장</button>
+          </div>
+        </div>
+        <textarea id="report-editor" rows="18" style="width:100%;border:1.5px solid #E4EDE8;border-radius:12px;padding:1.1rem;font-size:0.88rem;font-family:inherit;color:#1A2E24;background:#FAFCFA;resize:vertical;line-height:1.75;letter-spacing:-0.01em;transition:border-color 0.15s" placeholder="교사를 선택하면 자동으로 리포트가 생성됩니다" onfocus="this.style.borderColor='#4D826C'" onblur="this.style.borderColor='#E4EDE8'"></textarea>
+        <p id="report-save-msg" style="font-size:0.76rem;color:#4D826C;margin-top:6px;min-height:1rem"></p>
+      </div>
+      <div id="report-empty" style="text-align:center;padding:3rem;color:#8FAF9F;font-size:0.88rem">교사를 선택하면 주간 데이터를 불러올 수 있어요</div>
     </div>
+
     <div class="adm-sec" id="asec-settings">
       <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">앱 설정</h2>
       <p style="font-size:0.82rem;color:#8FAF9F;margin-bottom:1.5rem">로고 및 앱 외관을 설정해요</p>
-
-      <!-- 로고 업로드 -->
       <div class="card" style="margin-bottom:1.25rem">
         <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:0.5rem">로고 이미지</p>
         <p style="font-size:0.78rem;color:#8FAF9F;margin-bottom:1rem">로그인 화면과 헤더에 표시되는 로고를 변경해요<br>권장 크기: 정사각형 (200×200px 이상), PNG/JPG</p>
-
-        <!-- 현재 로고 미리보기 -->
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:1.25rem">
-          <div id="logo-preview-big" style="width:72px;height:72px;border-radius:18px;background:#F4F7F4;border:1.5px dashed #C8DDD5;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-            <span style="font-size:0.72rem;color:#8FAF9F;text-align:center">미리보기</span>
-          </div>
-          <div>
-            <p style="font-size:0.82rem;font-weight:600;color:#1A2E24;margin-bottom:4px">현재 로고</p>
-            <p style="font-size:0.74rem;color:#8FAF9F" id="logo-current-label">기본 로고 사용 중</p>
-          </div>
+          <div id="logo-preview-big" style="width:72px;height:72px;border-radius:18px;background:#F4F7F4;border:1.5px dashed #C8DDD5;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0"><span style="font-size:0.72rem;color:#8FAF9F;text-align:center">미리보기</span></div>
+          <div><p style="font-size:0.82rem;font-weight:600;color:#1A2E24;margin-bottom:4px">현재 로고</p><p style="font-size:0.74rem;color:#8FAF9F" id="logo-current-label">기본 로고 사용 중</p></div>
         </div>
-
-        <!-- 업로드 방식 선택 -->
-        <div style="display:flex;background:#F4F7F4;border-radius:9px;padding:3px;margin-bottom:1rem;gap:3px" id="logo-tab-bar">
+        <div style="display:flex;background:#F4F7F4;border-radius:9px;padding:3px;margin-bottom:1rem;gap:3px">
           <button onclick="switchLogoTab('file')" id="logo-t-file" style="flex:1;padding:0.5rem;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:600;background:#fff;color:#4D826C;box-shadow:0 1px 5px rgba(0,0,0,0.07);transition:all 0.14s">파일 업로드</button>
           <button onclick="switchLogoTab('url')" id="logo-t-url" style="flex:1;padding:0.5rem;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:0.82rem;font-weight:400;background:transparent;color:#8FAF9F;transition:all 0.14s">URL 입력</button>
         </div>
-
         <div id="logo-file-zone" style="border:1.5px dashed #C8DDD5;border-radius:10px;padding:1.25rem;text-align:center;background:#FAFCFA;margin-bottom:0.75rem;cursor:pointer" onclick="document.getElementById('logo-file-inp').click()">
           <div style="font-size:1.75rem;margin-bottom:6px">🖼️</div>
           <p style="font-size:0.84rem;color:#8FAF9F;margin:0" id="logo-file-label">클릭해서 로고 이미지 선택<br><span style="font-size:0.72rem">PNG, JPG, SVG · 정사각형 권장</span></p>
           <input id="logo-file-inp" type="file" accept="image/*" style="display:none" onchange="onLogoFileSelect(this)">
         </div>
-
         <div id="logo-url-zone" style="display:none;margin-bottom:0.75rem">
           <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">이미지 URL</label>
           <input id="logo-url-inp" class="inp" placeholder="https://..." oninput="previewLogoUrl(this.value)">
         </div>
-
         <div style="display:flex;gap:10px;align-items:center">
           <button id="logo-save-btn" onclick="saveLogo()" style="background:#4D826C;color:#fff;border:none;border-radius:10px;padding:0.7rem 1.5rem;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:inherit">적용하기</button>
           <button onclick="resetLogo()" style="background:#F4F7F4;color:#8FAF9F;border:1px solid #E4EDE8;border-radius:10px;padding:0.7rem 1.25rem;font-size:0.88rem;cursor:pointer;font-family:inherit">기본값으로</button>
@@ -476,7 +443,6 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -763,7 +729,9 @@ async function endCurrentActivity() {
     var dur = Math.floor((Date.now() - actStartTime) / 1000);
     try {
       await db.collection('users').doc(currentUser).collection('activities').doc(currentActivityId).update({
-        endTime: new Date().toISOString(), duration: dur
+        endTime: new Date().toISOString(),
+        duration: dur,
+        qualified: dur >= 180  // 3분 이상 여부 플래그
       });
     } catch(e) {}
     currentActivityId = null; actStartTime = null;
@@ -856,7 +824,7 @@ async function doSubmit() {
 ════════════════════════════════ */
 function buildAdminTabs() {
   var bar = document.getElementById('adm-tab-bar'); bar.innerHTML='';
-  [['ov','개요'],['prog','프로그램 편집'],['cont','콘텐츠'],['teach','교사 관리'],['surv','만족도'],['settings','⚙️ 설정']].forEach(function(t,i){
+  [['ov','개요'],['prog','프로그램 편집'],['cont','콘텐츠'],['teach','교사 관리'],['report','📋 주간 리포트'],['settings','⚙️ 설정']].forEach(function(t,i){
     var b=ce('button'); b.className='adm-tab'+(i===0?' on':''); b.textContent=t[1];
     b.onclick=function(){
       document.querySelectorAll('.adm-tab').forEach(function(x){x.classList.remove('on');});
@@ -946,6 +914,10 @@ function renderOv() {
         closeModal(); await adminRefresh();
       });
     };})(a);
+    if(a.qualified||(a.duration&&a.duration>=180)){
+      var star=ce('span'); star.textContent='⭐'; star.title='3분 이상 시청'; star.style.cssText='font-size:0.82rem;flex-shrink:0';
+      row.appendChild(star);
+    }
     row.appendChild(ico); row.appendChild(inf); row.appendChild(bdg); row.appendChild(del); log.appendChild(row);
   });
 }
@@ -1185,7 +1157,8 @@ function renderTeachers() {
         var pColors={'1':'#4D826C','2':'#3A6B57','3':'#2D5242'};
         var d=new Date(a.startTime);
         txt.appendChild(mk('p',{fontSize:'0.78rem',fontWeight:'600',color:pColors[a.programId]||'#4D826C',margin:'0 0 1px'},'P'+a.programId+' — '+a.contentTitle));
-        txt.appendChild(mk('p',{fontSize:'0.7rem',color:'#8FAF9F',margin:'0'},fmtFull(a.startTime)+' · '+fmtDurLong(a.duration)+(a.intensity==='low'?' · 저강도':' · 고강도')));
+        var qualMark = (a.qualified||(a.duration&&a.duration>=180)) ? ' ⭐' : '';
+        txt.appendChild(mk('p',{fontSize:'0.7rem',color:'#8FAF9F',margin:'0'},fmtFull(a.startTime)+' · '+fmtDurLong(a.duration)+(a.intensity==='low'?' · 저강도':' · 고강도')+qualMark));
         item.appendChild(dot); item.appendChild(txt); timeline.appendChild(item);
       });
       detail.appendChild(timeline);
@@ -1508,6 +1481,223 @@ function exportSurveysExcel() {
   });
   downloadCSV('사이사이_만족도조사_'+new Date().toISOString().slice(0,10)+'.csv', rows);
   showToast('📥 만족도 데이터 다운로드 완료!');
+}
+
+
+/* ════════════════════════════════
+   WEEKLY REPORT
+════════════════════════════════ */
+var reportCache = { userId:'', weekStart:'', acts:[], savedContent:'' };
+
+var YOGA_TIPS = {
+  '1': [
+    { pose:'고양이-소 자세 (Cat-Cow)', area:'척추·허리', effect:'척추 유연성 향상, 허리 긴장 완화' },
+    { pose:'어깨 돌리기 (Shoulder Rolls)', area:'어깨·목', effect:'어깨 결림 해소, 혈액순환 촉진' },
+    { pose:'비틀기 자세 (Seated Twist)', area:'등·옆구리', effect:'등 근육 이완, 소화 기능 개선' },
+  ],
+  '2': [
+    { pose:'나비 자세 (Butterfly)', area:'고관절·허벅지', effect:'고관절 유연성 향상, 하체 긴장 완화' },
+    { pose:'전사 자세 (Warrior I)', area:'다리·코어', effect:'하체 근력 강화, 집중력 향상' },
+    { pose:'나무 자세 (Tree Pose)', area:'균형·발목', effect:'균형감각 향상, 집중력 강화' },
+  ],
+  '3': [
+    { pose:'아이 자세 (Child Pose)', area:'등·골반', effect:'심신 안정, 허리 이완' },
+    { pose:'4-7-8 호흡법', area:'폐·횡격막', effect:'스트레스 완화, 부교감신경 활성화' },
+    { pose:'사바사나 (Savasana)', area:'전신', effect:'완전한 이완, 피로 회복' },
+  ],
+};
+
+var PROG_FULL = {'1':'프로그램 1 (몸 회복)','2':'프로그램 2 (전이시간)','3':'프로그램 3 (명상·호흡)'};
+var DAYS_KO = ['일','월','화','수','목','금','토'];
+
+function getWeekOptions() {
+  var opts = [];
+  var now = new Date();
+  for (var i = 0; i < 8; i++) {
+    var d = new Date(now);
+    d.setDate(d.getDate() - d.getDay() - i * 7); // 이번 주 일요일부터 역순
+    var start = new Date(d);
+    var end = new Date(d); end.setDate(end.getDate() + 6);
+    var label = (start.getMonth()+1)+'/'+start.getDate()+'('+DAYS_KO[0]+') ~ '+(end.getMonth()+1)+'/'+end.getDate()+'('+DAYS_KO[6]+')';
+    opts.push({ label: label, start: start.toISOString().slice(0,10) });
+  }
+  return opts;
+}
+
+function initReportSelects() {
+  // 교사 목록
+  var sel = document.getElementById('report-user-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">교사를 선택하세요</option>';
+  adminCache.users.forEach(function(u) {
+    var opt = document.createElement('option');
+    opt.value = u.userId || u.id;
+    opt.textContent = '교사 #' + (u.userId || u.id);
+    sel.appendChild(opt);
+  });
+  // 주차 목록
+  var wsel = document.getElementById('report-week-sel');
+  wsel.innerHTML = '';
+  getWeekOptions().forEach(function(w, i) {
+    var opt = document.createElement('option');
+    opt.value = w.start;
+    opt.textContent = i === 0 ? '이번 주 (' + w.label + ')' : w.label;
+    wsel.appendChild(opt);
+  });
+}
+
+function onReportUserChange() {
+  var uid = document.getElementById('report-user-sel').value;
+  if (!uid) return;
+  generateReport();
+}
+
+async function generateReport() {
+  var uid = document.getElementById('report-user-sel').value;
+  var weekStart = document.getElementById('report-week-sel').value;
+  if (!uid || !weekStart) return;
+
+  var weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  // 해당 주차 활동 필터
+  var acts = adminCache.activities.filter(function(a) {
+    if (a.userId !== uid && a.userId !== uid) return false;
+    var d = new Date(a.startTime);
+    return d >= new Date(weekStart) && d < weekEnd;
+  });
+
+  reportCache = { userId: uid, weekStart: weekStart, acts: acts };
+
+  // 통계 카드
+  var cards = document.getElementById('report-stat-cards');
+  var totalSec = acts.reduce(function(s,a){ return s+(a.duration||0); }, 0);
+  var qualified = acts.filter(function(a){ return a.qualified || (a.duration&&a.duration>=180); });
+  var byP = {'1':0,'2':0,'3':0};
+  acts.forEach(function(a){ if(byP[a.programId]!==undefined) byP[a.programId]++; });
+  var topP = Object.entries(byP).sort(function(a,b){return b[1]-a[1];})[0];
+
+  cards.innerHTML = '';
+  [{v:acts.length+'회', l:'총 활동'},{v:Math.round(totalSec/60)+'분', l:'누적 시간'},{v:qualified.length+'회', l:'⭐ 3분+ 활동'},{v:topP[1]>0?(PROG_FULL[topP[0]]||'—'):'—', l:'가장 많이 참여'}].forEach(function(s){
+    var c = document.createElement('div'); c.className='card'; c.style.textAlign='center';
+    c.innerHTML = '<div style="font-size:1.1rem;font-weight:700;color:#1A2E24;margin-bottom:3px">'+s.v+'</div><div style="font-size:0.68rem;color:#8FAF9F">'+s.l+'</div>';
+    cards.appendChild(c);
+  });
+
+  // 저장된 리포트 불러오기
+  var reportKey = uid + '_' + weekStart;
+  var savedSnap = await db.collection('weeklyReports').doc(reportKey).get().catch(function(){return null;});
+  var savedContent = savedSnap && savedSnap.exists ? savedSnap.data().content : null;
+
+  document.getElementById('report-stat-cards').style.display = 'grid';
+  document.getElementById('report-editor-wrap').style.display = 'block';
+  document.getElementById('report-empty').style.display = 'none';
+
+  var editor = document.getElementById('report-editor');
+  editor.value = savedContent || buildSampleReport(uid, weekStart, acts, byP, totalSec, qualified.length);
+  reportCache.savedContent = editor.value;
+  document.getElementById('report-save-msg').textContent = savedContent ? '💾 저장된 리포트를 불러왔어요' : '✨ 데이터를 바탕으로 샘플 리포트를 생성했어요';
+  setTimeout(function(){ document.getElementById('report-save-msg').textContent=''; }, 3000);
+}
+
+function buildSampleReport(uid, weekStart, acts, byP, totalSec, qualCount) {
+  var ws = new Date(weekStart);
+  var we = new Date(weekStart); we.setDate(we.getDate()+6);
+  var dateRange = (ws.getMonth()+1)+'/'+ws.getDate()+' ~ '+(we.getMonth()+1)+'/'+we.getDate();
+
+  // 시간대 분석
+  var hourBucket = {};
+  acts.forEach(function(a){ var h=new Date(a.startTime).getHours(); hourBucket[h]=(hourBucket[h]||0)+1; });
+  var peakH = Object.entries(hourBucket).sort(function(a,b){return b[1]-a[1];})[0];
+  var peakLabel = peakH ? (function(h){
+    h=parseInt(h);
+    if(h>=6&&h<9) return '오전 등원 준비 시간대(6~9시)';
+    if(h>=9&&h<12) return '오전 활동 시간대(9~12시)';
+    if(h>=12&&h<14) return '점심 시간대(12~14시)';
+    if(h>=14&&h<17) return '오후 활동 시간대(14~17시)';
+    if(h>=17&&h<20) return '퇴근 전후 시간대(17~20시)';
+    return '저녁 시간대(20시 이후)';
+  })(peakH[0]) : '—';
+
+  // 요일별 분포
+  var dayBucket = [0,0,0,0,0,0,0];
+  acts.forEach(function(a){ dayBucket[new Date(a.startTime).getDay()]++; });
+  var activeDays = DAYS_KO.filter(function(_,i){return dayBucket[i]>0;}).join(', ');
+
+  // 가장 많이 참여한 프로그램 요가 팁
+  var topProg = Object.entries(byP).sort(function(a,b){return b[1]-a[1];})[0][0];
+  var tips = YOGA_TIPS[topProg] || YOGA_TIPS['1'];
+  var tip = tips[Math.floor(Math.random()*tips.length)];
+
+  var lines = [];
+  lines.push('[ 사이사이 주간 활동 리포트 ]');
+  lines.push('교사 #'+uid+'  ·  '+dateRange);
+  lines.push('');
+  lines.push('━━━ 이번 주 활동 요약 ━━━');
+  lines.push('• 총 활동 횟수: '+acts.length+'회');
+  lines.push('• 누적 시간: '+Math.round(totalSec/60)+'분');
+  lines.push('• 충분한 참여(3분+): '+qualCount+'회 ⭐');
+  lines.push('• 활동 요일: '+(activeDays||'없음'));
+  lines.push('• 주요 활동 시간대: '+peakLabel);
+  lines.push('');
+  lines.push('━━━ 프로그램별 참여 ━━━');
+  ['1','2','3'].forEach(function(pid){
+    if(byP[pid]>0) lines.push('• '+PROG_FULL[pid]+': '+byP[pid]+'회');
+  });
+  lines.push('');
+  lines.push('━━━ 이번 주 추천 동작 ━━━');
+  lines.push('[ '+tip.pose+' ]');
+  lines.push('• 주요 부위: '+tip.area);
+  lines.push('• 기대 효과: '+tip.effect);
+  lines.push('');
+  lines.push('━━━ 관리자 코멘트 ━━━');
+  lines.push('이번 주도 수고 많으셨어요.');
+  lines.push('(여기에 개별 코멘트를 작성해주세요)');
+
+  return lines.join('\n');
+}
+
+function resetReportContent() {
+  var c = reportCache;
+  if (!c.userId) return;
+  var acts = c.acts;
+  var byP={'1':0,'2':0,'3':0}; acts.forEach(function(a){if(byP[a.programId]!==undefined)byP[a.programId]++;});
+  var totalSec=acts.reduce(function(s,a){return s+(a.duration||0);},0);
+  var qualified=acts.filter(function(a){return a.qualified||(a.duration&&a.duration>=180);}).length;
+  document.getElementById('report-editor').value = buildSampleReport(c.userId, c.weekStart, acts, byP, totalSec, qualified);
+  document.getElementById('report-save-msg').textContent = '초기화됐어요';
+  setTimeout(function(){document.getElementById('report-save-msg').textContent='';},2000);
+}
+
+async function saveReport() {
+  var uid = reportCache.userId;
+  var weekStart = reportCache.weekStart;
+  if (!uid || !weekStart) return;
+  var content = document.getElementById('report-editor').value;
+  var btn = document.querySelector('[onclick="saveReport()"]');
+  btn.textContent = '저장 중...';
+  try {
+    await db.collection('weeklyReports').doc(uid+'_'+weekStart).set({
+      userId: uid, weekStart: weekStart, content: content,
+      updatedAt: new Date().toISOString()
+    });
+    document.getElementById('report-save-msg').textContent = '✅ 저장됐어요!';
+    showToast('리포트 저장 완료!');
+  } catch(e) {
+    document.getElementById('report-save-msg').textContent = '✗ 저장 실패: '+e.message;
+  }
+  btn.textContent = '저장';
+  setTimeout(function(){document.getElementById('report-save-msg').textContent='';},3000);
+}
+
+function exportReportText() {
+  var text = document.getElementById('report-editor').value;
+  if (!text.trim()) { showToast('먼저 리포트를 생성해주세요'); return; }
+  navigator.clipboard.writeText(text).then(function(){
+    showToast('📋 클립보드에 복사됐어요!');
+  }).catch(function(){
+    showToast('복사 실패 — 직접 선택해서 복사해주세요');
+  });
 }
 
 /* ════════════════════════════════
