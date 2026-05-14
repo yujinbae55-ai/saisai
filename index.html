@@ -519,7 +519,6 @@ async function doLogin() {
     currentUser = code;
     document.getElementById('u-code').textContent = code;
     await loadPrograms();
-    buildSurveyUI();
     go('p-home');
   } catch(e) {
     showErr('l-err','접속에 실패했습니다: '+e.message);
@@ -863,6 +862,7 @@ async function adminRefresh() {
     renderOv(); renderContents(); renderTeachers(); renderSurveys();
     buildProgEditList();
     showToast('새로고침 완료!');
+    initReportSelects();
   } catch(e) { showToast('오류: '+e.message); }
 }
 
@@ -1518,16 +1518,16 @@ function getWeekOptions() {
     d.setDate(d.getDate() - d.getDay() - i * 7); // 이번 주 일요일부터 역순
     var start = new Date(d);
     var end = new Date(d); end.setDate(end.getDate() + 6);
-    var label = (start.getMonth()+1)+'/'+start.getDate()+'('+DAYS_KO[0]+') ~ '+(end.getMonth()+1)+'/'+end.getDate()+'('+DAYS_KO[6]+')';
+    var label = (start.getMonth()+1)+'/'+start.getDate()+'('+DAYS_KO[start.getDay()]+') ~ '+(end.getMonth()+1)+'/'+end.getDate()+'('+DAYS_KO[end.getDay()]+')';
     opts.push({ label: label, start: start.toISOString().slice(0,10) });
   }
   return opts;
 }
 
 function initReportSelects() {
-  // 교사 목록
   var sel = document.getElementById('report-user-sel');
-  if (!sel) return;
+  var wsel = document.getElementById('report-week-sel');
+  if (!sel || !wsel) return;
   sel.innerHTML = '<option value="">교사를 선택하세요</option>';
   adminCache.users.forEach(function(u) {
     var opt = document.createElement('option');
@@ -1536,7 +1536,6 @@ function initReportSelects() {
     sel.appendChild(opt);
   });
   // 주차 목록
-  var wsel = document.getElementById('report-week-sel');
   wsel.innerHTML = '';
   getWeekOptions().forEach(function(w, i) {
     var opt = document.createElement('option');
