@@ -839,15 +839,21 @@ function buildAdminTabs() {
 async function adminRefresh() {
   showToast('데이터 불러오는 중...');
   try {
-    var [usersSnap, surveysSnap, contentsSnap, progSnap] = await Promise.all([
-      db.collection('users').get(),
-      db.collection('surveys').orderBy('createdAt','desc').get(),
-      db.collection('content').orderBy('createdAt','desc').get(),
-      db.collection('programConfigs').get()
-    ]);
+    // 각각 독립 fetch — 하나 실패해도 나머지는 정상 로드
+    var usersSnap = await db.collection('users').get();
     adminCache.users = usersSnap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    adminCache.surveys = surveysSnap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    adminCache.contents = contentsSnap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+
+    var surveysSnap = await db.collection('surveys').get().catch(function(){return {docs:[]};});
+    adminCache.surveys = surveysSnap.docs
+      .map(function(d){return Object.assign({id:d.id},d.data());})
+      .sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+
+    var contentsSnap = await db.collection('content').get().catch(function(){return {docs:[]};});
+    adminCache.contents = contentsSnap.docs
+      .map(function(d){return Object.assign({id:d.id},d.data());})
+      .sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+
+    var progSnap = await db.collection('programConfigs').get().catch(function(){return {docs:[]};});
     var pm={};
     progSnap.forEach(function(d){pm[d.id]=d.data();});
     adminCache.programs = DEFAULT_PROGRAMS.map(function(p){return pm[p.id]?Object.assign({},p,pm[p.id]):p;});
