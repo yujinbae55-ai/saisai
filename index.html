@@ -829,6 +829,7 @@ function buildAdminTabs() {
       document.querySelectorAll('.adm-tab').forEach(function(x){x.classList.remove('on');});
       document.querySelectorAll('.adm-sec').forEach(function(x){x.classList.remove('on');});
       b.classList.add('on'); document.getElementById('asec-'+t[0]).classList.add('on');
+      if(t[0]==='report') initReportSelects();
     };
     bar.appendChild(b);
   });
@@ -1529,10 +1530,16 @@ function initReportSelects() {
   var wsel = document.getElementById('report-week-sel');
   if (!sel || !wsel) return;
   sel.innerHTML = '<option value="">교사를 선택하세요</option>';
-  adminCache.users.forEach(function(u) {
+  var sorted = adminCache.users.slice().sort(function(a,b){
+    var ai = parseInt(a.userId||a.id||0), bi = parseInt(b.userId||b.id||0);
+    return ai - bi;
+  });
+  sorted.forEach(function(u) {
+    var uid = u.userId || u.id || '';
+    if (!uid) return;
     var opt = document.createElement('option');
-    opt.value = u.userId || u.id;
-    opt.textContent = '교사 #' + (u.userId || u.id);
+    opt.value = uid;
+    opt.textContent = '교사 #' + uid;
     sel.appendChild(opt);
   });
   // 주차 목록
@@ -1561,7 +1568,7 @@ async function generateReport() {
 
   // 해당 주차 활동 필터
   var acts = adminCache.activities.filter(function(a) {
-    if (a.userId !== uid && a.userId !== uid) return false;
+    if (String(a.userId) !== String(uid)) return false;
     var d = new Date(a.startTime);
     return d >= new Date(weekStart) && d < weekEnd;
   });
