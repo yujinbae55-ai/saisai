@@ -281,15 +281,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
     <!-- 리포트 본문 -->
     <div id="report-notion-body" style="display:none">
       <div class="notion-wrap" id="report-rendered"></div>
-      <!-- 동작 사진 -->
-      <div id="pose-img-display" style="display:none;max-width:680px;margin:0 auto;padding:0 1.5rem">
-        <div style="background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden;margin-bottom:1rem">
-          <img id="pose-img-src" src="" alt="추천 동작 사진" style="width:100%;max-height:360px;object-fit:cover;display:block">
-          <div style="padding:0.75rem 1.1rem;background:#F4F7F4">
-            <p style="font-size:0.78rem;color:#4D826C;font-weight:600;margin:0">🧘 이번 주 추천 동작 사진</p>
-          </div>
-        </div>
-      </div>
+
 
       <!-- 교사 소감 -->
       <div style="max-width:680px;margin:0 auto;padding:0 1.5rem 4rem">
@@ -505,11 +497,11 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
           <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin:0">리포트 내용 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 자유롭게 수정 가능해요</span></p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button onclick="previewReport()" style="background:#F4F7F4;color:#2D5242;border:1px solid #C8DDD5;border-radius:8px;padding:5px 12px;font-size:0.76rem;cursor:pointer;font-family:inherit">👁 미리보기</button>
             <button onclick="resetReportContent()" style="background:#F4F7F4;color:#8FAF9F;border:1px solid #E4EDE8;border-radius:8px;padding:5px 12px;font-size:0.76rem;cursor:pointer;font-family:inherit">초기화</button>
-            <button onclick="saveReport()" style="background:#F0F7F3;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">저장</button>
+            <button onclick="saveReport()" style="background:#F0F7F3;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">💾 저장</button>
+            <button onclick="previewReport()" style="background:#E8F2EE;color:#2D5242;border:1px solid #B8D4C8;border-radius:8px;padding:5px 12px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">👁 미리보기</button>
             <button onclick="publishReport()" id="publish-btn" style="background:#4D826C;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">📤 교사 발송</button>
-            <button onclick="unpublishReport()" id="unpublish-btn" style="display:none;background:rgba(192,57,43,0.08);color:#C0392B;border:1px solid rgba(192,57,43,0.2);border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">발송 취소</button>
+            <button onclick="unpublishReport()" id="unpublish-btn" style="display:none;background:rgba(192,57,43,0.08);color:#C0392B;border:1px solid rgba(192,57,43,0.2);border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">⛔ 발송 취소</button>
           </div>
           <p id="publish-status" style="font-size:0.74rem;margin-top:6px;min-height:1rem;color:#8FAF9F"></p>
 
@@ -1951,20 +1943,20 @@ async function generateReport() {
   document.getElementById('report-empty').style.display = 'none';
 
   // 발송 상태 표시
-  var isPublished = false;
-  if(savedSnap && savedSnap.exists) isPublished = !!savedSnap.data().published;
+  var isPublished = savedSnap && savedSnap.exists ? !!savedSnap.data().published : false;
   var pubBtn = document.getElementById('publish-btn');
   var unpubBtn = document.getElementById('unpublish-btn');
   var pubStatus = document.getElementById('publish-status');
+  // 발송 상태에 따라 버튼 표시
+  pubBtn.style.display = isPublished ? 'none' : '';
+  unpubBtn.style.display = isPublished ? '' : 'none';
   if(isPublished) {
-    pubBtn.style.display = 'none';
-    unpubBtn.style.display = '';
-    pubStatus.textContent = '✅ 현재 교사에게 발송됨';
+    var publishedAt = savedSnap.data().publishedAt ? new Date(savedSnap.data().publishedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    pubStatus.textContent = '✅ 발송됨' + (publishedAt ? ' · '+publishedAt : '');
     pubStatus.style.color = '#4D826C';
   } else {
-    pubBtn.style.display = '';
-    unpubBtn.style.display = 'none';
-    pubStatus.textContent = '';
+    pubStatus.textContent = savedSnap && savedSnap.exists ? '📝 저장됨 (미발송)' : '✨ 새 리포트';
+    pubStatus.style.color = '#8FAF9F';
   }
 
   // 기존 사진 불러오기
@@ -2108,6 +2100,7 @@ function buildSampleReport(uid, weekStart, acts, byP, totalSec, qualCount, prevA
   lines.push('');
   lines.push('**'+tip.content+'** 를 가장 많이 하셨네요.');
   lines.push('이 동작과 함께하면 좋은 자세를 소개해요.');
+  lines.push(''); // 이미지 삽입 위치
   lines.push('');
   lines.push('**'+tip.pose+'**');
   lines.push('- 🎯 주요 부위: '+tip.area);
@@ -2327,16 +2320,28 @@ async function loadTeacherReport() {
     var data = snap.data();
     document.getElementById('report-no-content').style.display = 'none';
     document.getElementById('report-notion-body').style.display = 'block';
-    document.getElementById('report-rendered').innerHTML = renderMarkdown(data.content || '');
-    // 동작 사진 표시
+    var renderedHtml = renderMarkdown(data.content || '');
     var poseUrl = data.poseImageUrl || '';
-    var poseDisplay = document.getElementById('pose-img-display');
+    // "이 동작과 함께하면 좋은 자세를 소개해요" 문구 뒤에 이미지 삽입
     if(poseUrl) {
-      document.getElementById('pose-img-src').src = poseUrl;
-      poseDisplay.style.display = 'block';
-    } else {
-      poseDisplay.style.display = 'none';
+      var imgHtml = '<div style="margin:0.75rem 0 1rem;border-radius:12px;overflow:hidden;border:1px solid #E4EDE8">'
+        + '<img src="'+poseUrl+'" alt="추천 동작" style="width:100%;max-height:320px;object-fit:cover;display:block">'
+        + '</div>';
+      // "소개해요." 문구 뒤에 삽입
+      if(renderedHtml.includes('소개해요.')) {
+        renderedHtml = renderedHtml.replace(
+          /소개해요\.<\/p>/,
+          '소개해요.</p>' + imgHtml
+        );
+      } else {
+        // 문구 없으면 🧘 섹션 뒤에 삽입
+        renderedHtml = renderedHtml.replace(
+          /(<h2 class="notion-h2">🧘[^<]*<\/h2>)/,
+          '$1' + imgHtml
+        );
+      }
     }
+    document.getElementById('report-rendered').innerHTML = renderedHtml;
 
     // 소감 초기화
     initFeedbackStars();
