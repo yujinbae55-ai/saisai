@@ -23,6 +23,38 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#C8DDD5;border-radius:10px}
 ::-webkit-scrollbar-track{background:transparent}
+/* ── 노션 스타일 리포트 ── */
+.notion-wrap{max-width:680px;margin:0 auto;padding:2rem 1.5rem 4rem;font-family:"Pretendard",-apple-system,sans-serif}
+.notion-h1{font-size:1.9rem;font-weight:700;color:#1A2E24;letter-spacing:-0.04em;line-height:1.3;margin-bottom:0.3rem}
+.notion-h2{font-size:1.15rem;font-weight:700;color:#1A2E24;letter-spacing:-0.03em;margin:2rem 0 0.75rem;padding-bottom:0.4rem;border-bottom:1.5px solid #E4EDE8}
+.notion-h3{font-size:0.95rem;font-weight:600;color:#2D5242;margin:1.25rem 0 0.5rem;letter-spacing:-0.02em}
+.notion-body{font-size:0.9rem;color:#3A4A42;line-height:1.8;letter-spacing:-0.01em}
+.notion-meta{font-size:0.82rem;color:#8FAF9F;margin-bottom:2rem;letter-spacing:-0.01em}
+.notion-divider{border:none;border-top:1.5px solid #E4EDE8;margin:1.5rem 0}
+.notion-table{width:100%;border-collapse:collapse;font-size:0.84rem;margin-bottom:0.5rem}
+.notion-table th{background:#F4F7F4;color:#4D826C;font-weight:600;padding:0.6rem 0.9rem;text-align:left;border:1px solid #E4EDE8;font-size:0.78rem}
+.notion-table td{padding:0.6rem 0.9rem;border:1px solid #E4EDE8;color:#1A2E24;vertical-align:middle}
+.notion-table tr:nth-child(even) td{background:#FAFCFA}
+.notion-quote{background:#F4F7F4;border-left:3px solid #4D826C;padding:0.75rem 1rem;border-radius:0 8px 8px 0;font-size:0.88rem;color:#4D826C;margin:0.75rem 0;font-style:italic}
+.notion-tag{display:inline-block;background:#E8F2EE;color:#4D826C;font-size:0.72rem;font-weight:600;padding:2px 9px;border-radius:6px;margin-right:4px}
+.notion-tag.high{background:#FEF3CD;color:#8B6914}
+.notion-prog-block{background:#fff;border:1px solid #E4EDE8;border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem}
+.notion-prog-title{font-size:0.95rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.02em}
+.notion-prog-sub{font-size:0.76rem;color:#4D826C;font-weight:600;margin-bottom:0.6rem}
+.notion-content-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.84rem;color:#3A4A42}
+.notion-dot{width:6px;height:6px;border-radius:50%;background:#4D826C;flex-shrink:0}
+.notion-dot.high{background:#E8A020}
+.notion-tip-card{background:linear-gradient(135deg,#F0F7F3 0%,#E8F2EE 100%);border-radius:12px;padding:1.25rem;margin-bottom:0.75rem;border:1px solid #C8DDD5}
+.notion-next-card{background:linear-gradient(135deg,#F7F4F0 0%,#F2EDE8 100%);border-radius:12px;padding:1.25rem;border:1px solid #DDD5C8}
+.notion-footer{font-size:0.72rem;color:#B8D4C8;text-align:center;margin-top:2rem;padding-top:1rem;border-top:1px solid #E4EDE8}
+/* ── 소감 작성 ── */
+.feedback-wrap{background:#fff;border:1.5px solid #E4EDE8;border-radius:14px;padding:1.5rem;margin-top:1.5rem}
+.star-feedback{display:flex;gap:8px;margin-bottom:1rem}
+.star-feedback span{font-size:1.6rem;cursor:pointer;transition:transform 0.1s;line-height:1}
+.star-feedback span:hover{transform:scale(1.2)}
+.notion-no-report{text-align:center;padding:4rem 2rem;color:#8FAF9F}
+.notion-no-report .icon{font-size:2.5rem;margin-bottom:1rem}
+
 /* ── 마이페이지 ── */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:1rem}
 .cal-day{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:500;cursor:default;position:relative}
@@ -160,6 +192,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
     <div id="prog-cards" style="display:flex;flex-direction:column;gap:0.8rem;margin-bottom:0.9rem">
       <div class="loading"><div class="spinner"></div>불러오는 중...</div>
     </div>
+    <button class="dashed-btn" onclick="openTeacherReport()" style="color:#2D5242;border-color:#A8C8B8;margin-bottom:8px">📋 주간 리포트 확인하기 →</button>
     <button class="dashed-btn" onclick="openMypage()" style="color:#3A6B57;border-color:#B8D4C8">내 활동 기록 보기 →</button>
   </div>
 </div>
@@ -215,6 +248,63 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
   </div>
 </div>
 
+
+
+<!-- ════════ TEACHER REPORT ════════ -->
+<div class="page" id="p-report">
+  <div class="hdr">
+    <button class="back-btn" onclick="go('p-home')">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <span class="ht">주간 리포트</span>
+    <div style="width:32px"></div>
+  </div>
+
+  <!-- 주차 선택 -->
+  <div style="background:#fff;border-bottom:1px solid #E4EDE8;padding:0.75rem 1.25rem;display:flex;align-items:center;gap:10px">
+    <select id="teacher-report-week" class="sel" style="flex:1;font-size:0.84rem" onchange="loadTeacherReport()">
+      <option value="">주차를 선택하세요</option>
+    </select>
+  </div>
+
+  <div style="flex:1;overflow-y:auto">
+    <!-- 리포트 없을 때 -->
+    <div id="report-no-content" class="notion-no-report">
+      <div class="icon">📭</div>
+      <p style="font-size:0.9rem;font-weight:600;color:#4D826C;margin-bottom:0.5rem">아직 도착한 리포트가 없어요</p>
+      <p style="font-size:0.82rem">관리자가 주간 리포트를 발송하면<br>여기서 확인할 수 있어요</p>
+    </div>
+
+    <!-- 리포트 본문 -->
+    <div id="report-notion-body" style="display:none">
+      <div class="notion-wrap" id="report-rendered"></div>
+
+      <!-- 교사 소감 -->
+      <div style="max-width:680px;margin:0 auto;padding:0 1.5rem 4rem">
+        <div class="feedback-wrap">
+          <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:0.25rem;letter-spacing:-0.02em">이번 주 소감</p>
+          <p style="font-size:0.76rem;color:#8FAF9F;margin-bottom:1rem">이번 주 활동은 어떠셨나요?</p>
+
+          <!-- 별점 -->
+          <p style="font-size:0.76rem;font-weight:600;color:#4D826C;margin-bottom:0.5rem">별점</p>
+          <div class="star-feedback" id="feedback-stars"></div>
+          <p id="feedback-star-label" style="font-size:0.76rem;color:#4D826C;font-weight:600;min-height:1.2em;margin-bottom:1rem"></p>
+
+          <!-- 소감 텍스트 -->
+          <p style="font-size:0.76rem;font-weight:600;color:#4D826C;margin-bottom:0.5rem">한 줄 소감 <span style="color:#B8D4C8;font-weight:400">(선택)</span></p>
+          <textarea id="feedback-text" rows="3" placeholder="이번 주 활동에 대한 소감을 자유롭게 적어주세요"
+            style="width:100%;border:1.5px solid #E4EDE8;border-radius:10px;padding:0.8rem;font-size:0.85rem;font-family:inherit;resize:none;color:#1A2E24;background:#FAFCFA;line-height:1.6;transition:border-color 0.15s"
+            onfocus="this.style.borderColor='#4D826C'" onblur="this.style.borderColor='#E4EDE8'"></textarea>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-top:0.75rem">
+            <button id="feedback-save-btn" onclick="saveFeedback()" style="background:#4D826C;color:#fff;border:none;border-radius:10px;padding:0.65rem 1.5rem;font-size:0.84rem;font-weight:600;cursor:pointer;font-family:inherit">소감 저장</button>
+            <span id="feedback-msg" style="font-size:0.78rem;color:#4D826C"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ════════ MYPAGE ════════ -->
 <div class="page" id="p-mypage">
@@ -404,7 +494,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
           <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin:0">리포트 내용 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 자유롭게 수정 가능해요</span></p>
           <div style="display:flex;gap:8px">
             <button onclick="resetReportContent()" style="background:#F4F7F4;color:#8FAF9F;border:1px solid #E4EDE8;border-radius:8px;padding:5px 12px;font-size:0.76rem;cursor:pointer;font-family:inherit">초기화</button>
-            <button onclick="saveReport()" style="background:#4D826C;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">저장</button>
+            <button onclick="saveReport()" style="background:#F0F7F3;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">저장</button>
+            <button onclick="publishReport()" id="publish-btn" style="background:#4D826C;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">📤 교사 발송</button>
           </div>
         </div>
         <textarea id="report-editor" rows="18" style="width:100%;border:1.5px solid #E4EDE8;border-radius:12px;padding:1.1rem;font-size:0.88rem;font-family:inherit;color:#1A2E24;background:#FAFCFA;resize:vertical;line-height:1.75;letter-spacing:-0.01em;transition:border-color 0.15s" placeholder="교사를 선택하면 자동으로 리포트가 생성됩니다" onfocus="this.style.borderColor='#4D826C'" onblur="this.style.borderColor='#E4EDE8'"></textarea>
@@ -1496,21 +1587,34 @@ function exportSurveysExcel() {
 ════════════════════════════════ */
 var reportCache = { userId:'', weekStart:'', acts:[], savedContent:'' };
 
+// 실제 콘텐츠 구성 (A~F)
+var CONTENT_MAP = {
+  'A': { name:'살짝 풀어봐요', prog:'1', intensity:'저강도' },
+  'B': { name:'바위섬과 보물찾기', prog:'1', intensity:'고강도' },
+  'C': { name:'나는 쑥쑥 크는 씨앗!', prog:'2', intensity:'저강도' },
+  'D': { name:'동물 친구들을 만나요', prog:'2', intensity:'고강도' },
+  'E': { name:'구름 타고 하늘 여행', prog:'3', intensity:'저강도' },
+  'F': { name:'숲속에서 쉿!', prog:'3', intensity:'저강도' },
+};
+
+var PROG_INFO = {
+  '1': { sub:'근육 이완·스트레칭', title:'욱씬욱씬 아픈 몸을 회복하자!' },
+  '2': { sub:'활동 전환·움직임 놀이', title:'전이시간을 아이들과 더욱 즐겁게!' },
+  '3': { sub:'마음챙김·호흡 명상', title:'명상과 호흡으로 차분한 우리반 분위기' },
+};
+
 var YOGA_TIPS = {
   '1': [
-    { pose:'고양이-소 자세 (Cat-Cow)', area:'척추·허리', effect:'척추 유연성 향상, 허리 긴장 완화' },
-    { pose:'어깨 돌리기 (Shoulder Rolls)', area:'어깨·목', effect:'어깨 결림 해소, 혈액순환 촉진' },
-    { pose:'비틀기 자세 (Seated Twist)', area:'등·옆구리', effect:'등 근육 이완, 소화 기능 개선' },
+    { content:'A. 살짝 풀어봐요', pose:'고양이-소 자세 (Cat-Cow)', area:'척추·허리', effect:'하루 동안 굳어진 척추를 부드럽게 깨워줘요' },
+    { content:'B. 바위섬과 보물찾기', pose:'어깨 돌리기 (Shoulder Rolls)', area:'어깨·목', effect:'어깨 결림을 풀고 혈액순환을 도와줘요' },
   ],
   '2': [
-    { pose:'나비 자세 (Butterfly)', area:'고관절·허벅지', effect:'고관절 유연성 향상, 하체 긴장 완화' },
-    { pose:'전사 자세 (Warrior I)', area:'다리·코어', effect:'하체 근력 강화, 집중력 향상' },
-    { pose:'나무 자세 (Tree Pose)', area:'균형·발목', effect:'균형감각 향상, 집중력 강화' },
+    { content:'C. 나는 쑥쑥 크는 씨앗!', pose:'나비 자세 (Butterfly)', area:'고관절·허벅지', effect:'앉아있던 하체를 가볍게 열어줘요' },
+    { content:'D. 동물 친구들을 만나요', pose:'전사 자세 (Warrior I)', area:'다리·코어', effect:'하체 근력을 깨우고 집중력을 높여줘요' },
   ],
   '3': [
-    { pose:'아이 자세 (Child Pose)', area:'등·골반', effect:'심신 안정, 허리 이완' },
-    { pose:'4-7-8 호흡법', area:'폐·횡격막', effect:'스트레스 완화, 부교감신경 활성화' },
-    { pose:'사바사나 (Savasana)', area:'전신', effect:'완전한 이완, 피로 회복' },
+    { content:'E. 구름 타고 하늘 여행', pose:'4-7-8 호흡법', area:'폐·횡격막', effect:'긴장을 내려놓고 부교감신경을 활성화해줘요' },
+    { content:'F. 숲속에서 쉿!', pose:'아이 자세 (Child Pose)', area:'등·골반', effect:'심신을 고요하게 안정시켜줘요' },
   ],
 };
 
@@ -1531,32 +1635,7 @@ function getWeekOptions() {
   return opts;
 }
 
-function initReportSelects() {
-  var sel = document.getElementById('report-user-sel');
-  var wsel = document.getElementById('report-week-sel');
-  if (!sel || !wsel) return;
-  sel.innerHTML = '<option value="">교사를 선택하세요</option>';
-  var sorted = adminCache.users.slice().sort(function(a,b){
-    var ai = parseInt(a.userId||a.id||0), bi = parseInt(b.userId||b.id||0);
-    return ai - bi;
-  });
-  sorted.forEach(function(u) {
-    var uid = u.userId || u.id || '';
-    if (!uid) return;
-    var opt = document.createElement('option');
-    opt.value = uid;
-    opt.textContent = '교사 #' + uid;
-    sel.appendChild(opt);
-  });
-  // 주차 목록
-  wsel.innerHTML = '';
-  getWeekOptions().forEach(function(w, i) {
-    var opt = document.createElement('option');
-    opt.value = w.start;
-    opt.textContent = i === 0 ? '이번 주 (' + w.label + ')' : w.label;
-    wsel.appendChild(opt);
-  });
-}
+
 
 function onReportUserChange() {
   var uid = document.getElementById('report-user-sel').value;
@@ -1605,17 +1684,75 @@ async function generateReport() {
   document.getElementById('report-editor-wrap').style.display = 'block';
   document.getElementById('report-empty').style.display = 'none';
 
+  // 지난 주 활동 가져오기
+  var prevWeekStart = new Date(weekStart);
+  prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+  var prevWeekEnd = new Date(weekStart);
+  var prevActs = adminCache.activities.filter(function(a) {
+    if (String(a.userId) !== String(uid)) return false;
+    var d = new Date(a.startTime);
+    return d >= prevWeekStart && d < prevWeekEnd;
+  });
+
   var editor = document.getElementById('report-editor');
-  editor.value = savedContent || buildSampleReport(uid, weekStart, acts, byP, totalSec, qualified.length);
+  editor.value = savedContent || buildSampleReport(uid, weekStart, acts, byP, totalSec, qualified.length, prevActs);
   reportCache.savedContent = editor.value;
   document.getElementById('report-save-msg').textContent = savedContent ? '💾 저장된 리포트를 불러왔어요' : '✨ 데이터를 바탕으로 샘플 리포트를 생성했어요';
   setTimeout(function(){ document.getElementById('report-save-msg').textContent=''; }, 3000);
 }
 
-function buildSampleReport(uid, weekStart, acts, byP, totalSec, qualCount) {
+function buildSampleReport(uid, weekStart, acts, byP, totalSec, qualCount, prevActs) {
   var ws = new Date(weekStart);
   var we = new Date(weekStart); we.setDate(we.getDate()+6);
-  var dateRange = (ws.getMonth()+1)+'/'+ws.getDate()+' ~ '+(we.getMonth()+1)+'/'+we.getDate();
+  var fmt = function(d){ return (d.getMonth()+1)+'/'+d.getDate()+'('+DAYS_KO[d.getDay()]+')'; };
+  var dateRange = fmt(ws)+' ~ '+fmt(we);
+
+  // 지난 주 데이터
+  var prevTotal = prevActs ? prevActs.length : 0;
+  var prevSec = prevActs ? prevActs.reduce(function(s,a){return s+(a.duration||0);},0) : 0;
+  var prevQual = prevActs ? prevActs.filter(function(a){return a.qualified||(a.duration&&a.duration>=180);}).length : 0;
+  var prevDays = prevActs ? new Set(prevActs.map(function(a){
+    var d=new Date(a.startTime); return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
+  })).size : 0;
+
+  // 변화량 계산
+  function changePct(curr, prev) {
+    if(!prev) return curr > 0 ? '신규 ✨' : '—';
+    var pct = Math.round((curr - prev) / prev * 100);
+    return pct > 0 ? '↑ '+pct+'%' : pct < 0 ? '↓ '+Math.abs(pct)+'%' : '→ 동일';
+  }
+  var currMin = Math.round(totalSec/60);
+  var prevMin = Math.round(prevSec/60);
+  var currDays = Object.keys(acts.reduce(function(m,a){
+    var d=new Date(a.startTime); m[d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()]=1; return m;
+  },{})).length;
+
+  // 프로그램별 참여 내역 (contentTitle 기준)
+  var contentCount = {};
+  acts.forEach(function(a){
+    var t = a.contentTitle || '';
+    contentCount[t] = (contentCount[t]||0)+1;
+  });
+
+  // 프로그램별 그룹핑
+  var progGroup = {'1':[],'2':[],'3':[]};
+  acts.forEach(function(a){
+    if(progGroup[a.programId] !== undefined) {
+      var t = a.contentTitle || '(제목 없음)';
+      var found = progGroup[a.programId].find(function(x){return x.title===t;});
+      if(found) found.count++;
+      else progGroup[a.programId].push({title:t, intensity:a.intensity, count:1});
+    }
+  });
+
+  // 가장 많이 참여한 프로그램
+  var topProg = Object.entries(byP).sort(function(a,b){return b[1]-a[1];})[0][0];
+  var tip = YOGA_TIPS[topProg] ? YOGA_TIPS[topProg][0] : YOGA_TIPS['1'][0];
+
+  // 덜 참여한 프로그램 추천
+  var leastProg = Object.entries(byP).sort(function(a,b){return a[1]-b[1];})[0][0];
+  var nextTip = YOGA_TIPS[leastProg] ? YOGA_TIPS[leastProg][0] : YOGA_TIPS['3'][0];
+  var nextProgInfo = PROG_INFO[leastProg] || PROG_INFO['3'];
 
   // 시간대 분석
   var hourBucket = {};
@@ -1623,48 +1760,84 @@ function buildSampleReport(uid, weekStart, acts, byP, totalSec, qualCount) {
   var peakH = Object.entries(hourBucket).sort(function(a,b){return b[1]-a[1];})[0];
   var peakLabel = peakH ? (function(h){
     h=parseInt(h);
-    if(h>=6&&h<9) return '오전 등원 준비 시간대(6~9시)';
-    if(h>=9&&h<12) return '오전 활동 시간대(9~12시)';
-    if(h>=12&&h<14) return '점심 시간대(12~14시)';
-    if(h>=14&&h<17) return '오후 활동 시간대(14~17시)';
-    if(h>=17&&h<20) return '퇴근 전후 시간대(17~20시)';
-    return '저녁 시간대(20시 이후)';
+    if(h>=6&&h<9) return '등원 준비 시간대 (6~9시)';
+    if(h>=9&&h<12) return '오전 활동 시간대 (9~12시)';
+    if(h>=12&&h<14) return '점심 시간대 (12~14시)';
+    if(h>=14&&h<17) return '오후 활동 시간대 (14~17시)';
+    if(h>=17&&h<20) return '퇴근 전후 시간대 (17~20시)';
+    return '저녁 시간대 (20시 이후)';
   })(peakH[0]) : '—';
 
-  // 요일별 분포
-  var dayBucket = [0,0,0,0,0,0,0];
-  acts.forEach(function(a){ dayBucket[new Date(a.startTime).getDay()]++; });
-  var activeDays = DAYS_KO.filter(function(_,i){return dayBucket[i]>0;}).join(', ');
-
-  // 가장 많이 참여한 프로그램 요가 팁
-  var topProg = Object.entries(byP).sort(function(a,b){return b[1]-a[1];})[0][0];
-  var tips = YOGA_TIPS[topProg] || YOGA_TIPS['1'];
-  var tip = tips[Math.floor(Math.random()*tips.length)];
-
   var lines = [];
-  lines.push('[ 사이사이 주간 활동 리포트 ]');
-  lines.push('교사 #'+uid+'  ·  '+dateRange);
+  lines.push('# 🌿 사이사이 주간 웰니스 리포트');
   lines.push('');
-  lines.push('━━━ 이번 주 활동 요약 ━━━');
-  lines.push('• 총 활동 횟수: '+acts.length+'회');
-  lines.push('• 누적 시간: '+Math.round(totalSec/60)+'분');
-  lines.push('• 충분한 참여(3분+): '+qualCount+'회 ⭐');
-  lines.push('• 활동 요일: '+(activeDays||'없음'));
-  lines.push('• 주요 활동 시간대: '+peakLabel);
+  lines.push('**교사 #'+uid+'** | '+dateRange);
   lines.push('');
-  lines.push('━━━ 프로그램별 참여 ━━━');
+  lines.push('---');
+  lines.push('');
+  lines.push('## 📊 이번 주 활동 한눈에 보기');
+  lines.push('');
+  lines.push('| 항목 | 이번 주 | 지난 주 | 변화 |');
+  lines.push('|------|--------|--------|------|');
+  lines.push('| 총 활동 횟수 | '+acts.length+'회 | '+prevTotal+'회 | '+changePct(acts.length, prevTotal)+' |');
+  lines.push('| 누적 시간 | '+currMin+'분 | '+prevMin+'분 | '+changePct(currMin, prevMin)+' |');
+  lines.push('| 충분한 참여 (3분+) | '+qualCount+'회 ⭐ | '+prevQual+'회 | '+changePct(qualCount, prevQual)+' |');
+  lines.push('| 활동 일수 | '+currDays+'일 | '+prevDays+'일 | '+changePct(currDays, prevDays)+' |');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push('## 🎯 이번 주 참여 프로그램');
+  lines.push('');
+  lines.push('> 주로 **'+peakLabel+'** 에 활동하셨어요');
+  lines.push('');
+
   ['1','2','3'].forEach(function(pid){
-    if(byP[pid]>0) lines.push('• '+PROG_FULL[pid]+': '+byP[pid]+'회');
+    if(!byP[pid]) return;
+    var info = PROG_INFO[pid];
+    lines.push('**'+info.sub+'** *('+info.title+')* — '+byP[pid]+'회');
+    progGroup[pid].forEach(function(item){
+      var intLabel = item.intensity==='low'?'저강도':'고강도';
+      lines.push('- '+item.title+' ('+intLabel+') × '+item.count+'회');
+    });
+    lines.push('');
   });
+
+  lines.push('---');
   lines.push('');
-  lines.push('━━━ 이번 주 추천 동작 ━━━');
-  lines.push('[ '+tip.pose+' ]');
-  lines.push('• 주요 부위: '+tip.area);
-  lines.push('• 기대 효과: '+tip.effect);
+  lines.push('## 🧘 이번 주 추천 동작');
   lines.push('');
-  lines.push('━━━ 관리자 코멘트 ━━━');
+  lines.push('**'+tip.content+'** 를 가장 많이 하셨네요.');
+  lines.push('이 동작과 함께하면 좋은 자세를 소개해요.');
+  lines.push('');
+  lines.push('**'+tip.pose+'**');
+  lines.push('- 🎯 주요 부위: '+tip.area);
+  lines.push('- ✨ 효과: '+tip.effect);
+  lines.push('- ⏱ 권장 시간: 3~5분');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push('## 🌤 다음 주 활동 추천');
+  lines.push('');
+  if(byP[leastProg] === 0) {
+    lines.push('이번 주 아직 참여하지 않으신 **'+nextProgInfo.sub+'**,');
+    lines.push('*('+nextProgInfo.title+')* 를 다음 주에 한 번 경험해보시는 건 어떨까요?');
+    lines.push('');
+    lines.push('**'+nextTip.content+'** 로 가볍게 시작해보세요 🍃');
+  } else {
+    lines.push('이번 주보다 **'+nextProgInfo.sub+'** 를 조금 더 늘려보시는 건 어떨까요?');
+    lines.push('');
+    lines.push('**'+nextTip.content+'** 로 새로운 루틴을 만들어보세요 🍃');
+  }
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push('## 💌 이번 주 응원');
+  lines.push('');
   lines.push('이번 주도 수고 많으셨어요.');
-  lines.push('(여기에 개별 코멘트를 작성해주세요)');
+  lines.push('다음 주도 사이사이에서 함께할게요 🌿');
+  lines.push('');
+  lines.push('---');
+  lines.push('*사이사이 웰니스 프로그램 | 유아교사 주간 리포트*');
 
   return lines.join('\n');
 }
@@ -1709,6 +1882,271 @@ function exportReportText() {
     showToast('📋 클립보드에 복사됐어요!');
   }).catch(function(){
     showToast('복사 실패 — 직접 선택해서 복사해주세요');
+  });
+}
+
+
+/* ════════════════════════════════
+   TEACHER REPORT VIEW
+════════════════════════════════ */
+var feedbackRating = 0;
+var currentReportKey = '';
+
+// 마크다운 → 노션 스타일 HTML 렌더링
+function renderMarkdown(md) {
+  var lines = md.split('\n');
+  var html = '';
+  var inTable = false;
+  var tableRows = [];
+
+  function flushTable() {
+    if (!tableRows.length) return;
+    var thead = tableRows[0];
+    var tbody = tableRows.slice(2); // 구분선 제외
+    var h = '<table class="notion-table"><thead><tr>';
+    thead.split('|').filter(function(c){return c.trim();}).forEach(function(c){
+      h += '<th>'+c.trim()+'</th>';
+    });
+    h += '</tr></thead><tbody>';
+    tbody.forEach(function(row){
+      h += '<tr>';
+      row.split('|').filter(function(c){return c.trim();}).forEach(function(c){
+        var cell = c.trim();
+        // 변화량 색상
+        if(cell.startsWith('↑')) cell = '<span style="color:#4D826C;font-weight:600">'+cell+'</span>';
+        else if(cell.startsWith('↓')) cell = '<span style="color:#C0392B;font-weight:600">'+cell+'</span>';
+        else if(cell.startsWith('→')) cell = '<span style="color:#8FAF9F">'+cell+'</span>';
+        h += '<td>'+cell+'</td>';
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+    html += h;
+    tableRows = [];
+    inTable = false;
+  }
+
+  lines.forEach(function(line) {
+    // 표
+    if(line.trim().startsWith('|')) {
+      inTable = true;
+      tableRows.push(line.trim());
+      return;
+    }
+    if(inTable) flushTable();
+
+    // 제목
+    if(line.startsWith('# ')) {
+      html += '<h1 class="notion-h1">'+line.slice(2)+'</h1>';
+    } else if(line.startsWith('## ')) {
+      html += '<h2 class="notion-h2">'+line.slice(3)+'</h2>';
+    } else if(line.startsWith('### ')) {
+      html += '<h3 class="notion-h3">'+line.slice(4)+'</h3>';
+    // 구분선
+    } else if(line.trim() === '---') {
+      html += '<hr class="notion-divider">';
+    // 인용구
+    } else if(line.startsWith('> ')) {
+      html += '<div class="notion-quote">'+inlineMd(line.slice(2))+'</div>';
+    // 리스트
+    } else if(line.startsWith('- ')) {
+      html += '<div class="notion-content-item"><div class="notion-dot"></div><span class="notion-body">'+inlineMd(line.slice(2))+'</span></div>';
+    // 메타(교사 # | 날짜)
+    } else if(line.startsWith('**교사 #')) {
+      html += '<p class="notion-meta">'+inlineMd(line)+'</p>';
+    // 이탤릭 제목 하단 (푸터)
+    } else if(line.startsWith('*사이사이')) {
+      html += '<p class="notion-footer">'+line.replace(/\*/g,'')+'</p>';
+    // 빈줄
+    } else if(line.trim() === '') {
+      html += '<div style="height:0.4rem"></div>';
+    // 일반 본문
+    } else {
+      html += '<p class="notion-body" style="margin-bottom:0.3rem">'+inlineMd(line)+'</p>';
+    }
+  });
+  if(inTable) flushTable();
+  return html;
+}
+
+function inlineMd(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em style="color:#4D826C">$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:#F0F7F3;padding:1px 5px;border-radius:4px;font-size:0.85em;color:#2D5242">$1</code>');
+}
+
+async function openTeacherReport() {
+  go('p-report');
+  // 발송된 리포트 목록 불러오기
+  try {
+    var snap = await db.collection('weeklyReports')
+      .where('userId','==',currentUser)
+      .where('published','==',true)
+      .get();
+    var reports = snap.docs.map(function(d){return Object.assign({id:d.id},d.data());})
+      .sort(function(a,b){return b.weekStart.localeCompare(a.weekStart);});
+
+    var wsel = document.getElementById('teacher-report-week');
+    wsel.innerHTML = '<option value="">주차를 선택하세요</option>';
+    reports.forEach(function(r) {
+      var ws = new Date(r.weekStart);
+      var we = new Date(r.weekStart); we.setDate(we.getDate()+6);
+      var label = (ws.getMonth()+1)+'/'+ws.getDate()+' ~ '+(we.getMonth()+1)+'/'+we.getDate();
+      var opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = label;
+      wsel.appendChild(opt);
+    });
+
+    if(reports.length > 0) {
+      wsel.value = reports[0].id;
+      loadTeacherReport();
+    } else {
+      document.getElementById('report-no-content').style.display = 'block';
+      document.getElementById('report-notion-body').style.display = 'none';
+    }
+  } catch(e) {
+    console.warn('리포트 로드 실패:', e);
+  }
+}
+
+async function loadTeacherReport() {
+  var reportId = document.getElementById('teacher-report-week').value;
+  if(!reportId) return;
+  currentReportKey = reportId;
+
+  try {
+    var snap = await db.collection('weeklyReports').doc(reportId).get();
+    if(!snap.exists || !snap.data().published) {
+      document.getElementById('report-no-content').style.display = 'block';
+      document.getElementById('report-notion-body').style.display = 'none';
+      return;
+    }
+    var data = snap.data();
+    document.getElementById('report-no-content').style.display = 'none';
+    document.getElementById('report-notion-body').style.display = 'block';
+    document.getElementById('report-rendered').innerHTML = renderMarkdown(data.content || '');
+
+    // 소감 초기화
+    initFeedbackStars();
+    document.getElementById('feedback-text').value = '';
+    document.getElementById('feedback-msg').textContent = '';
+    feedbackRating = 0;
+
+    // 기존 소감 불러오기
+    var fbSnap = await db.collection('reportFeedbacks').doc(reportId+'_'+currentUser).get().catch(function(){return null;});
+    if(fbSnap && fbSnap.exists) {
+      var fb = fbSnap.data();
+      feedbackRating = fb.rating || 0;
+      document.getElementById('feedback-text').value = fb.comment || '';
+      updateFeedbackStars(feedbackRating);
+      if(feedbackRating) document.getElementById('feedback-star-label').textContent = ['매우 아쉬웠어요','아쉬웠어요','보통이에요','좋았어요','매우 좋았어요'][feedbackRating-1];
+      document.getElementById('feedback-msg').textContent = '✓ 이미 소감을 남기셨어요';
+    }
+  } catch(e) {
+    console.warn('리포트 상세 로드 실패:', e);
+  }
+}
+
+function initFeedbackStars() {
+  var wrap = document.getElementById('feedback-stars');
+  wrap.innerHTML = '';
+  for(var i=1;i<=5;i++){
+    (function(val){
+      var s = document.createElement('span');
+      s.textContent = '★';
+      s.style.color = '#D4E3DB';
+      s.onmouseenter = function(){ updateFeedbackStars(val, true); };
+      s.onmouseleave = function(){ updateFeedbackStars(feedbackRating); };
+      s.onclick = function(){
+        feedbackRating = val;
+        updateFeedbackStars(val);
+        document.getElementById('feedback-star-label').textContent = ['매우 아쉬웠어요','아쉬웠어요','보통이에요','좋았어요','매우 좋았어요'][val-1];
+      };
+      wrap.appendChild(s);
+    })(i);
+  }
+}
+
+function updateFeedbackStars(val, hover) {
+  var stars = document.querySelectorAll('#feedback-stars span');
+  stars.forEach(function(s, i){
+    s.style.color = i < val ? (hover ? '#6BA88A' : '#4D826C') : '#D4E3DB';
+  });
+}
+
+async function saveFeedback() {
+  if(!currentReportKey) return;
+  var btn = document.getElementById('feedback-save-btn');
+  var msg = document.getElementById('feedback-msg');
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    await db.collection('reportFeedbacks').doc(currentReportKey+'_'+currentUser).set({
+      reportId: currentReportKey,
+      userId: currentUser,
+      rating: feedbackRating,
+      comment: document.getElementById('feedback-text').value,
+      createdAt: new Date().toISOString()
+    });
+    msg.textContent = '✓ 소감이 저장됐어요!';
+    showToast('소감이 저장됐어요 💚');
+  } catch(e) {
+    msg.textContent = '저장 실패: '+e.message;
+  }
+  btn.disabled = false; btn.textContent = '소감 저장';
+}
+
+/* ── 관리자: 리포트 발송 ── */
+async function publishReport() {
+  var uid = reportCache.userId;
+  var weekStart = reportCache.weekStart;
+  if(!uid || !weekStart) { showToast('먼저 교사와 주차를 선택해주세요'); return; }
+  var content = document.getElementById('report-editor').value;
+  if(!content.trim()) { showToast('리포트 내용을 작성해주세요'); return; }
+
+  var btn = document.getElementById('publish-btn');
+  btn.disabled = true; btn.textContent = '발송 중...';
+  try {
+    await db.collection('weeklyReports').doc(uid+'_'+weekStart).set({
+      userId: uid,
+      weekStart: weekStart,
+      content: content,
+      published: true,
+      publishedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    showToast('📤 교사 #'+uid+'에게 리포트가 발송됐어요!');
+    document.getElementById('report-save-msg').textContent = '✅ 발송 완료! 교사 페이지에서 확인 가능해요';
+  } catch(e) {
+    showToast('발송 실패: '+e.message);
+  }
+  btn.disabled = false; btn.textContent = '📤 교사 발송';
+}
+
+/* ── 관리자 주간 목록에 발송 상태 표시 ── */
+async function initReportSelects() {
+  var sel = document.getElementById('report-user-sel');
+  var wsel = document.getElementById('report-week-sel');
+  if(!sel || !wsel) return;
+  sel.innerHTML = '<option value="">교사를 선택하세요</option>';
+  var sorted = adminCache.users.slice().sort(function(a,b){
+    return parseInt(a.userId||a.id||0) - parseInt(b.userId||b.id||0);
+  });
+  sorted.forEach(function(u){
+    var uid = u.userId || u.id || '';
+    if(!uid) return;
+    var opt = document.createElement('option');
+    opt.value = uid;
+    opt.textContent = '교사 #'+uid;
+    sel.appendChild(opt);
+  });
+  wsel.innerHTML = '';
+  getWeekOptions().forEach(function(w,i){
+    var opt = document.createElement('option');
+    opt.value = w.start;
+    opt.textContent = i===0?'이번 주 ('+w.label+')':w.label;
+    wsel.appendChild(opt);
   });
 }
 
