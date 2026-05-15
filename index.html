@@ -520,7 +520,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
             </div>
             <!-- 미리보기 -->
             <div id="pose-img-preview" style="display:none;border-radius:10px;overflow:hidden;max-width:240px;border:1px solid #E4EDE8">
-              <img id="pose-preview-img" src="" alt="미리보기" style="width:100%;display:block;object-fit:cover;max-height:180px"
+              <img id="pose-preview-img" src="" alt="미리보기" style="width:100%;display:block;object-fit:contain;background:#F4F7F4;max-height:220px"
                 onerror="this.parentElement.style.display='none'">
             </div>
             <p id="pose-img-msg" style="font-size:0.72rem;color:#4D826C;margin-top:5px;min-height:1rem"></p>
@@ -1713,7 +1713,7 @@ function previewReport() {
   if(poseUrl) {
     var imgWrap = document.createElement('div');
     imgWrap.style.cssText = 'padding:0 1.5rem 1rem';
-    imgWrap.innerHTML = '<div style="background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden"><img src="'+poseUrl+'" style="width:100%;max-height:300px;object-fit:cover;display:block"><div style="padding:0.65rem 1rem;background:#F4F7F4"><p style="font-size:0.78rem;color:#4D826C;font-weight:600;margin:0">🧘 이번 주 추천 동작 사진</p></div></div>';
+    imgWrap.innerHTML = '<div style="background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden"><img src="'+poseUrl+'" style="width:100%;max-height:340px;object-fit:contain;background:#F4F7F4;display:block"><div style="padding:0.65rem 1rem;background:#F4F7F4"><p style="font-size:0.78rem;color:#4D826C;font-weight:600;margin:0">🧘 이번 주 추천 동작 사진</p></div></div>';
     previewEl.appendChild(imgWrap);
   }
   document.getElementById('report-preview-modal').style.display = 'block';
@@ -1754,11 +1754,27 @@ async function loadReportFeedbacks(reportKey) {
     feedbacks.sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });
     feedbacks.slice(0,3).forEach(function(f,i){
       var row = document.createElement('div');
-      row.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:0.8rem 1rem;border-bottom:'+(i<Math.min(feedbacks.length,3)-1?'1px solid #F0F7F3':'none');
+      row.style.cssText='display:flex;align-items:center;gap:8px;padding:0.8rem 1rem;border-bottom:'+(i<Math.min(feedbacks.length,3)-1?'1px solid #F0F7F3':'none');
+      var delBtn = document.createElement('button');
+      delBtn.className='del-btn'; delBtn.textContent='삭제';
+      delBtn.style.cssText='flex-shrink:0;';
+      (function(fid, rowEl){
+        delBtn.onclick=function(){
+          askDel('소감 삭제','이 소감을 삭제할까요?',async function(){
+            await db.collection('reportFeedbacks').doc(fid).delete().catch(function(){});
+            closeModal();
+            rowEl.style.opacity='0.3'; rowEl.style.pointerEvents='none';
+            rowEl.querySelector('span').textContent='삭제됨';
+            showToast('소감이 삭제됐어요');
+            setTimeout(function(){ loadReportFeedbacks(reportKey); }, 800);
+          });
+        };
+      })(f.id, row);
       row.innerHTML='<span style="font-weight:700;color:#4D826C;font-size:0.82rem;flex-shrink:0">#'+f.userId+'</span>'
         +'<span style="color:#F4A826;font-size:0.82rem;flex-shrink:0">'+'★'.repeat(f.rating||0)+'☆'.repeat(5-(f.rating||0))+'</span>'
         +'<span style="flex:1;font-size:0.8rem;color:#3A4A42;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(f.comment||'(의견 없음)')+'</span>'
         +'<span style="font-size:0.7rem;color:#B8D4C8;flex-shrink:0;white-space:nowrap">'+(f.createdAt?new Date(f.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'')+'</span>';
+      row.appendChild(delBtn);
       listEl.appendChild(row);
     });
     if(feedbacks.length > 3) {
@@ -1801,12 +1817,23 @@ async function loadAllFeedbacks() {
       card.style.cssText='padding:1rem;border-bottom:'+(i<feedbacks.length-1?'1px solid #F0F7F3':'none');
       var weekLabel = f.reportId ? f.reportId.replace(uid+'_','') : '—';
       try { var ws=new Date(weekLabel); var we=new Date(weekLabel); we.setDate(we.getDate()+6); weekLabel=(ws.getMonth()+1)+'/'+ws.getDate()+' ~ '+(we.getMonth()+1)+'/'+we.getDate(); } catch(e){}
-      card.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:0.4rem">'
+      var dBtn=document.createElement('button'); dBtn.className='del-btn'; dBtn.textContent='삭제'; dBtn.style.cssText='flex-shrink:0';
+      (function(fid,cardEl){
+        dBtn.onclick=function(){
+          askDel('소감 삭제','이 소감을 삭제할까요?',async function(){
+            await db.collection('reportFeedbacks').doc(fid).delete().catch(function(){});
+            closeModal(); cardEl.style.opacity='0.3'; cardEl.style.pointerEvents='none';
+            showToast('소감이 삭제됐어요');
+          });
+        };
+      })(f.id, card);
+      card.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:0.5rem">'
         +'<span style="font-size:0.72rem;font-weight:600;color:#4D826C;background:#E8F2EE;padding:2px 9px;border-radius:7px">'+weekLabel+'</span>'
         +'<span style="color:#F4A826;font-size:0.88rem">'+'★'.repeat(f.rating||0)+'☆'.repeat(5-(f.rating||0))+'</span>'
         +'<span style="font-size:0.7rem;color:#B8D4C8;margin-left:auto">'+(f.createdAt?new Date(f.createdAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+'</span>'
         +'</div>'
-        +'<p style="font-size:0.84rem;color:#3A4A42;margin:0;line-height:1.6">'+(f.comment||'<span style="color:#B8D4C8">의견 없음</span>')+'</p>';
+        +'<p style="font-size:0.84rem;color:#3A4A42;margin:0 0 0.5rem;line-height:1.6">'+(f.comment||'<span style="color:#B8D4C8">의견 없음</span>')+'</p>';
+      card.appendChild(dBtn);
       list.appendChild(card);
     });
   } catch(e) {
@@ -2207,7 +2234,7 @@ function renderMarkdown(md) {
         var cell = c.trim();
         // 변화량 색상
         if(cell.startsWith('↑')) cell = '<span style="color:#4D826C;font-weight:600">'+cell+'</span>';
-        else if(cell.startsWith('↓')) cell = '<span style="color:#C0392B;font-weight:600">'+cell+'</span>';
+        else if(cell.startsWith('↓')) cell = '<span style="color:#B85C58;font-weight:600">'+cell+'</span>';
         else if(cell.startsWith('→')) cell = '<span style="color:#8FAF9F">'+cell+'</span>';
         h += '<td>'+cell+'</td>';
       });
@@ -2325,7 +2352,7 @@ async function loadTeacherReport() {
     // "이 동작과 함께하면 좋은 자세를 소개해요" 문구 뒤에 이미지 삽입
     if(poseUrl) {
       var imgHtml = '<div style="margin:0.75rem 0 1rem;border-radius:12px;overflow:hidden;border:1px solid #E4EDE8">'
-        + '<img src="'+poseUrl+'" alt="추천 동작" style="width:100%;max-height:320px;object-fit:cover;display:block">'
+        + '<img src="'+poseUrl+'" alt="추천 동작" style="width:100%;max-height:340px;object-fit:contain;background:#F4F7F4;display:block">'
         + '</div>';
       // "소개해요." 문구 뒤에 삽입
       if(renderedHtml.includes('소개해요.')) {
