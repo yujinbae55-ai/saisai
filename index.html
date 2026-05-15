@@ -33,7 +33,10 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
 .notion-divider{border:none;border-top:1.5px solid #E4EDE8;margin:1.5rem 0}
 .notion-table{width:100%;border-collapse:collapse;font-size:0.84rem;margin-bottom:0.5rem}
 .notion-table th{background:#F4F7F4;color:#4D826C;font-weight:600;padding:0.6rem 0.9rem;text-align:left;border:1px solid #E4EDE8;font-size:0.78rem}
+.notion-table th:nth-child(2){background:#E8F2EE;color:#2D5242}
 .notion-table td{padding:0.6rem 0.9rem;border:1px solid #E4EDE8;color:#1A2E24;vertical-align:middle}
+.notion-table td:nth-child(2){background:#F0F7F3;font-weight:600;color:#1A2E24}
+.notion-table tr:nth-child(even) td:nth-child(2){background:#E8F2EE}
 .notion-table tr:nth-child(even) td{background:#FAFCFA}
 .notion-quote{background:#F4F7F4;border-left:3px solid #4D826C;padding:0.75rem 1rem;border-radius:0 8px 8px 0;font-size:0.88rem;color:#4D826C;margin:0.75rem 0;font-style:italic}
 .notion-tag{display:inline-block;background:#E8F2EE;color:#4D826C;font-size:0.72rem;font-weight:600;padding:2px 9px;border-radius:6px;margin-right:4px}
@@ -502,6 +505,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
           <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin:0">리포트 내용 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 자유롭게 수정 가능해요</span></p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="previewReport()" style="background:#F4F7F4;color:#2D5242;border:1px solid #C8DDD5;border-radius:8px;padding:5px 12px;font-size:0.76rem;cursor:pointer;font-family:inherit">👁 미리보기</button>
             <button onclick="resetReportContent()" style="background:#F4F7F4;color:#8FAF9F;border:1px solid #E4EDE8;border-radius:8px;padding:5px 12px;font-size:0.76rem;cursor:pointer;font-family:inherit">초기화</button>
             <button onclick="saveReport()" style="background:#F0F7F3;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">저장</button>
             <button onclick="publishReport()" id="publish-btn" style="background:#4D826C;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">📤 교사 발송</button>
@@ -509,31 +513,41 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
           </div>
           <p id="publish-status" style="font-size:0.74rem;margin-top:6px;min-height:1rem;color:#8FAF9F"></p>
 
-          <!-- 동작 사진 업로드 -->
+          <!-- 동작 사진 URL -->
           <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #E4EDE8">
             <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem">추천 동작 사진 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 선택사항</span></p>
-            <p style="font-size:0.75rem;color:#8FAF9F;margin-bottom:0.75rem">업로드하면 교사 리포트에 동작 사진이 함께 표시돼요 (JPG, PNG, WebP)</p>
-            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
-              <div id="pose-img-preview" style="width:90px;height:90px;border-radius:10px;background:#F4F7F4;border:1.5px dashed #C8DDD5;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;cursor:pointer" onclick="document.getElementById('pose-img-inp').click()">
-                <span style="font-size:1.5rem">🖼️</span>
-                <input id="pose-img-inp" type="file" accept="image/*" style="display:none" onchange="onPoseImgSelect(this)">
-              </div>
-              <div style="flex:1;min-width:120px">
-                <p style="font-size:0.76rem;color:#1A2E24;font-weight:500;margin-bottom:6px" id="pose-img-label">사진을 선택해주세요</p>
-                <div style="display:flex;gap:7px">
-                  <button onclick="document.getElementById('pose-img-inp').click()" style="background:#F0F7F3;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:5px 11px;font-size:0.74rem;cursor:pointer;font-family:inherit">사진 선택</button>
-                  <button onclick="savePoseImage()" id="pose-save-btn" style="background:#4D826C;color:#fff;border:none;border-radius:8px;padding:5px 11px;font-size:0.74rem;font-weight:600;cursor:pointer;font-family:inherit">업로드</button>
-                  <button onclick="removePoseImage()" id="pose-remove-btn" style="display:none;background:rgba(192,57,43,0.08);color:#C0392B;border:none;border-radius:8px;padding:5px 11px;font-size:0.74rem;cursor:pointer;font-family:inherit">삭제</button>
-                </div>
-                <p id="pose-img-msg" style="font-size:0.72rem;color:#4D826C;margin-top:5px;min-height:1rem"></p>
-              </div>
+            <p style="font-size:0.75rem;color:#8FAF9F;margin-bottom:0.75rem">이미지 URL을 붙여넣으면 교사 리포트에 바로 표시돼요<br><span style="color:#B8D4C8">구글 이미지 → 이미지 주소 복사 / 구글 드라이브 공유 링크도 가능해요</span></p>
+            <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:0.75rem">
+              <input id="pose-url-inp" class="inp" placeholder="https://... 이미지 URL 붙여넣기"
+                style="flex:1;min-width:200px;font-size:0.84rem"
+                oninput="previewPoseUrl(this.value)">
+              <button onclick="savePoseUrl()" id="pose-save-btn"
+                style="background:#4D826C;color:#fff;border:none;border-radius:10px;padding:0.68rem 1.1rem;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">적용</button>
+              <button onclick="removePoseImage()" id="pose-remove-btn"
+                style="display:none;background:rgba(192,57,43,0.08);color:#C0392B;border:1px solid rgba(192,57,43,0.15);border-radius:10px;padding:0.68rem 1.1rem;font-size:0.82rem;cursor:pointer;font-family:inherit;flex-shrink:0">삭제</button>
             </div>
+            <!-- 미리보기 -->
+            <div id="pose-img-preview" style="display:none;border-radius:10px;overflow:hidden;max-width:240px;border:1px solid #E4EDE8">
+              <img id="pose-preview-img" src="" alt="미리보기" style="width:100%;display:block;object-fit:cover;max-height:180px"
+                onerror="this.parentElement.style.display='none'">
+            </div>
+            <p id="pose-img-msg" style="font-size:0.72rem;color:#4D826C;margin-top:5px;min-height:1rem"></p>
           </div>
         </div>
         <textarea id="report-editor" rows="18" style="width:100%;border:1.5px solid #E4EDE8;border-radius:12px;padding:1.1rem;font-size:0.88rem;font-family:inherit;color:#1A2E24;background:#FAFCFA;resize:vertical;line-height:1.75;letter-spacing:-0.01em;transition:border-color 0.15s" placeholder="교사를 선택하면 자동으로 리포트가 생성됩니다" onfocus="this.style.borderColor='#4D826C'" onblur="this.style.borderColor='#E4EDE8'"></textarea>
         <p id="report-save-msg" style="font-size:0.76rem;color:#4D826C;margin-top:6px;min-height:1rem"></p>
       </div>
       <div id="report-empty" style="text-align:center;padding:3rem;color:#8FAF9F;font-size:0.88rem">교사를 선택하면 주간 데이터를 불러올 수 있어요</div>
+
+      <!-- 소감 현황 -->
+      <div id="feedback-section" style="display:none;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #E4EDE8">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+          <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin:0">교사 소감 현황</p>
+          <button onclick="loadAllFeedbacks()" style="background:#F0F7F3;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:4px 12px;font-size:0.74rem;cursor:pointer;font-family:inherit">전체 소감 보기</button>
+        </div>
+        <div id="feedback-summary-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:0.75rem"></div>
+        <div id="feedback-list-preview" style="background:#fff;border:1px solid #E4EDE8;border-radius:12px;overflow:hidden"></div>
+      </div>
     </div>
 
     <div class="adm-sec" id="asec-settings">
@@ -565,6 +579,59 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
           <span id="logo-msg" style="font-size:0.82rem"></span>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 리포트 미리보기 모달 -->
+<div id="report-preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;padding:1rem">
+  <div style="background:#fff;border-radius:18px;max-width:720px;margin:1rem auto;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid #E4EDE8;position:sticky;top:0;background:#fff;z-index:10">
+      <div>
+        <p style="font-size:1rem;font-weight:700;color:#1A2E24;margin:0;letter-spacing:-0.03em">리포트 미리보기</p>
+        <p style="font-size:0.74rem;color:#8FAF9F;margin:0">교사 화면에서 이렇게 보여요</p>
+      </div>
+      <button onclick="closePreview()" style="background:#F4F7F4;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;color:#8FAF9F;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <!-- 교사 화면 시뮬레이션 -->
+    <div style="background:#F4F7F4;padding:1rem">
+      <div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.07)">
+        <div style="background:#fff;border-bottom:1px solid #E4EDE8;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 1rem">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:22px;height:22px;background:#4D826C;border-radius:6px"></div>
+            <span style="font-size:0.9rem;font-weight:700;color:#1A2E24">사이사이</span>
+          </div>
+          <span style="font-size:0.7rem;color:#8FAF9F">미리보기 모드</span>
+        </div>
+        <div id="preview-content" style="max-height:70vh;overflow-y:auto"></div>
+        <!-- 소감 영역 미리보기 -->
+        <div style="padding:0 1.5rem 2rem;border-top:1px solid #E4EDE8;margin-top:0.5rem">
+          <div style="background:#fff;border:1.5px solid #E4EDE8;border-radius:14px;padding:1.25rem;margin-top:1.25rem">
+            <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:0.25rem">이번 주 소감</p>
+            <p style="font-size:0.76rem;color:#8FAF9F;margin-bottom:0.75rem">이번 주 활동은 어떠셨나요?</p>
+            <div style="display:flex;gap:6px;margin-bottom:0.5rem">
+              <span style="font-size:1.4rem;color:#D4E3DB">★</span><span style="font-size:1.4rem;color:#D4E3DB">★</span><span style="font-size:1.4rem;color:#D4E3DB">★</span><span style="font-size:1.4rem;color:#D4E3DB">★</span><span style="font-size:1.4rem;color:#D4E3DB">★</span>
+            </div>
+            <div style="border:1.5px solid #E4EDE8;border-radius:10px;padding:0.8rem;font-size:0.85rem;color:#B8D4C8;background:#FAFCFA">소감을 입력하는 공간이에요</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 소감 확인 모달 -->
+<div id="feedback-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;padding:1rem">
+  <div style="background:#fff;border-radius:18px;max-width:600px;margin:1rem auto;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid #E4EDE8">
+      <div>
+        <p style="font-size:1rem;font-weight:700;color:#1A2E24;margin:0;letter-spacing:-0.03em" id="fb-modal-title">교사 소감</p>
+        <p style="font-size:0.74rem;color:#8FAF9F;margin:0" id="fb-modal-sub"></p>
+      </div>
+      <button onclick="closeFeedbackModal()" style="background:#F4F7F4;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;color:#8FAF9F">✕</button>
+    </div>
+    <div style="padding:1.25rem;max-height:70vh;overflow-y:auto">
+      <div id="fb-modal-list"></div>
     </div>
   </div>
 </div>
@@ -1633,6 +1700,154 @@ function exportSurveysExcel() {
 }
 
 
+
+/* ════════════════════════════════
+   ADMIN FEEDBACK & PREVIEW
+════════════════════════════════ */
+
+// 미리보기
+function previewReport() {
+  var text = document.getElementById('report-editor').value;
+  if(!text.trim()) { showToast('리포트 내용을 먼저 작성해주세요'); return; }
+  var poseUrl = (document.getElementById('pose-url-inp') || {}).value || '';
+  var previewEl = document.getElementById('preview-content');
+  previewEl.innerHTML = '';
+  // 노션 스타일 렌더링
+  var notionWrap = document.createElement('div');
+  notionWrap.className = 'notion-wrap';
+  notionWrap.innerHTML = renderMarkdown(text);
+  previewEl.appendChild(notionWrap);
+  // 동작 사진 미리보기
+  if(poseUrl) {
+    var imgWrap = document.createElement('div');
+    imgWrap.style.cssText = 'padding:0 1.5rem 1rem';
+    imgWrap.innerHTML = '<div style="background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden"><img src="'+poseUrl+'" style="width:100%;max-height:300px;object-fit:cover;display:block"><div style="padding:0.65rem 1rem;background:#F4F7F4"><p style="font-size:0.78rem;color:#4D826C;font-weight:600;margin:0">🧘 이번 주 추천 동작 사진</p></div></div>';
+    previewEl.appendChild(imgWrap);
+  }
+  document.getElementById('report-preview-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closePreview() {
+  document.getElementById('report-preview-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// 소감 불러오기 (해당 리포트)
+async function loadReportFeedbacks(reportKey) {
+  var section = document.getElementById('feedback-section');
+  section.style.display = 'block';
+  var cards = document.getElementById('feedback-summary-cards');
+  var listEl = document.getElementById('feedback-list-preview');
+  cards.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:1rem;color:#8FAF9F;font-size:0.82rem">불러오는 중...</div>';
+  listEl.innerHTML = '';
+  try {
+    var snap = await db.collection('reportFeedbacks')
+      .where('reportId','==',reportKey)
+      .get().catch(function(){ return {docs:[]}; });
+    var feedbacks = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+    var total = feedbacks.length;
+    var avgRating = total ? (feedbacks.reduce(function(s,f){ return s+(f.rating||0); },0)/total).toFixed(1) : '—';
+    var withComment = feedbacks.filter(function(f){ return f.comment && f.comment.trim(); }).length;
+    cards.innerHTML = '';
+    [{v: total+'명', l:'소감 제출'},{v: avgRating ? '★ '+avgRating : '—', l:'평균 별점'},{v: withComment+'명', l:'의견 작성'}].forEach(function(s){
+      var c = document.createElement('div'); c.className='card'; c.style.textAlign='center';
+      c.innerHTML='<div style="font-size:1.2rem;font-weight:700;color:#4D826C;margin-bottom:3px">'+s.v+'</div><div style="font-size:0.72rem;color:#8FAF9F">'+s.l+'</div>';
+      cards.appendChild(c);
+    });
+    if(!total) {
+      listEl.innerHTML='<div style="text-align:center;padding:1.25rem;color:#8FAF9F;font-size:0.82rem">아직 제출된 소감이 없어요</div>';
+      return;
+    }
+    feedbacks.sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });
+    feedbacks.slice(0,3).forEach(function(f,i){
+      var row = document.createElement('div');
+      row.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:0.8rem 1rem;border-bottom:'+(i<Math.min(feedbacks.length,3)-1?'1px solid #F0F7F3':'none');
+      row.innerHTML='<span style="font-weight:700;color:#4D826C;font-size:0.82rem;flex-shrink:0">#'+f.userId+'</span>'
+        +'<span style="color:#F4A826;font-size:0.82rem;flex-shrink:0">'+'★'.repeat(f.rating||0)+'☆'.repeat(5-(f.rating||0))+'</span>'
+        +'<span style="flex:1;font-size:0.8rem;color:#3A4A42;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(f.comment||'(의견 없음)')+'</span>'
+        +'<span style="font-size:0.7rem;color:#B8D4C8;flex-shrink:0;white-space:nowrap">'+(f.createdAt?new Date(f.createdAt).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}):'')+'</span>';
+      listEl.appendChild(row);
+    });
+    if(feedbacks.length > 3) {
+      var more = document.createElement('div');
+      more.style.cssText='text-align:center;padding:0.65rem;font-size:0.76rem;color:#4D826C;cursor:pointer;font-weight:600;border-top:1px solid #F0F7F3';
+      more.textContent='+ '+(feedbacks.length-3)+'명 더 보기';
+      more.onclick=function(){ openFeedbackModal(reportKey, feedbacks); };
+      listEl.appendChild(more);
+    }
+  } catch(e) {
+    cards.innerHTML='<div style="grid-column:1/-1;color:#C0392B;font-size:0.8rem;padding:0.75rem">소감 로드 실패: '+e.message+'</div>';
+  }
+}
+
+// 전체 소감 모달
+async function loadAllFeedbacks() {
+  var uid = reportCache.userId;
+  if(!uid) { showToast('교사를 먼저 선택해주세요'); return; }
+  var title = document.getElementById('fb-modal-title');
+  var sub = document.getElementById('fb-modal-sub');
+  var list = document.getElementById('fb-modal-list');
+  title.textContent = '교사 #'+uid+' 소감 전체';
+  sub.textContent = '발송된 모든 주차의 소감을 확인해요';
+  list.innerHTML = '<div style="text-align:center;padding:2rem;color:#8FAF9F">불러오는 중...</div>';
+  document.getElementById('feedback-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  try {
+    var snap = await db.collection('reportFeedbacks')
+      .where('userId','==',uid)
+      .get().catch(function(){ return {docs:[]}; });
+    var feedbacks = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); })
+      .sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });
+    list.innerHTML = '';
+    if(!feedbacks.length) {
+      list.innerHTML='<div style="text-align:center;padding:2rem;color:#8FAF9F;font-size:0.88rem">아직 소감이 없어요</div>';
+      return;
+    }
+    feedbacks.forEach(function(f,i){
+      var card = document.createElement('div');
+      card.style.cssText='padding:1rem;border-bottom:'+(i<feedbacks.length-1?'1px solid #F0F7F3':'none');
+      var weekLabel = f.reportId ? f.reportId.replace(uid+'_','') : '—';
+      try { var ws=new Date(weekLabel); var we=new Date(weekLabel); we.setDate(we.getDate()+6); weekLabel=(ws.getMonth()+1)+'/'+ws.getDate()+' ~ '+(we.getMonth()+1)+'/'+we.getDate(); } catch(e){}
+      card.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:0.4rem">'
+        +'<span style="font-size:0.72rem;font-weight:600;color:#4D826C;background:#E8F2EE;padding:2px 9px;border-radius:7px">'+weekLabel+'</span>'
+        +'<span style="color:#F4A826;font-size:0.88rem">'+'★'.repeat(f.rating||0)+'☆'.repeat(5-(f.rating||0))+'</span>'
+        +'<span style="font-size:0.7rem;color:#B8D4C8;margin-left:auto">'+(f.createdAt?new Date(f.createdAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+'</span>'
+        +'</div>'
+        +'<p style="font-size:0.84rem;color:#3A4A42;margin:0;line-height:1.6">'+(f.comment||'<span style="color:#B8D4C8">의견 없음</span>')+'</p>';
+      list.appendChild(card);
+    });
+  } catch(e) {
+    list.innerHTML='<div style="color:#C0392B;padding:1rem;font-size:0.82rem">로드 실패: '+e.message+'</div>';
+  }
+}
+
+function openFeedbackModal(reportKey, feedbacks) {
+  var list = document.getElementById('fb-modal-list');
+  var uid = reportCache.userId;
+  document.getElementById('fb-modal-title').textContent = '이번 주 소감 전체';
+  document.getElementById('fb-modal-sub').textContent = feedbacks.length+'명 제출';
+  list.innerHTML = '';
+  feedbacks.forEach(function(f,i){
+    var row = document.createElement('div');
+    row.style.cssText='padding:0.9rem 1rem;border-bottom:'+(i<feedbacks.length-1?'1px solid #F0F7F3':'none');
+    row.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:0.35rem">'
+      +'<span style="font-weight:700;color:#4D826C;font-size:0.84rem">#'+f.userId+'</span>'
+      +'<span style="color:#F4A826;font-size:0.84rem">'+'★'.repeat(f.rating||0)+'☆'.repeat(5-(f.rating||0))+'</span>'
+      +'<span style="font-size:0.7rem;color:#B8D4C8;margin-left:auto">'+(f.createdAt?new Date(f.createdAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+'</span>'
+      +'</div>'
+      +'<p style="font-size:0.82rem;color:#3A4A42;margin:0">'+(f.comment||'<span style="color:#B8D4C8">의견 없음</span>')+'</p>';
+    list.appendChild(row);
+  });
+  document.getElementById('feedback-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFeedbackModal() {
+  document.getElementById('feedback-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
 /* ════════════════════════════════
    WEEKLY REPORT
 ════════════════════════════════ */
@@ -1754,15 +1969,16 @@ async function generateReport() {
 
   // 기존 사진 불러오기
   var poseUrl = (savedSnap && savedSnap.exists) ? (savedSnap.data().poseImageUrl || '') : '';
-  var prev = document.getElementById('pose-img-preview');
+  var poseInp = document.getElementById('pose-url-inp');
+  var poseRemove = document.getElementById('pose-remove-btn');
+  if(poseInp) poseInp.value = poseUrl || '';
   if(poseUrl) {
-    prev.innerHTML = '<img src="'+poseUrl+'" style="width:90px;height:90px;object-fit:cover;border-radius:10px"><input id="pose-img-inp" type="file" accept="image/*" style="display:none" onchange="onPoseImgSelect(this)">';
-    document.getElementById('pose-img-label').textContent = '✓ 사진 등록됨';
-    document.getElementById('pose-remove-btn').style.display = '';
+    previewPoseUrl(poseUrl);
+    if(poseRemove) poseRemove.style.display = '';
   } else {
-    prev.innerHTML = '<span style="font-size:1.5rem">🖼️</span><input id="pose-img-inp" type="file" accept="image/*" style="display:none" onchange="onPoseImgSelect(this)">';
-    document.getElementById('pose-img-label').textContent = '사진을 선택해주세요';
-    document.getElementById('pose-remove-btn').style.display = 'none';
+    var prev = document.getElementById('pose-img-preview');
+    if(prev) prev.style.display = 'none';
+    if(poseRemove) poseRemove.style.display = 'none';
   }
 
   // 지난 주 활동 가져오기
@@ -1780,6 +1996,9 @@ async function generateReport() {
   reportCache.savedContent = editor.value;
   document.getElementById('report-save-msg').textContent = savedContent ? '💾 저장된 리포트를 불러왔어요' : '✨ 데이터를 바탕으로 샘플 리포트를 생성했어요';
   setTimeout(function(){ document.getElementById('report-save-msg').textContent=''; }, 3000);
+
+  // 해당 주차 소감 자동 로드
+  loadReportFeedbacks(uid+'_'+weekStart);
 }
 
 function buildSampleReport(uid, weekStart, acts, byP, totalSec, qualCount, prevActs) {
@@ -2236,46 +2455,35 @@ async function unpublishReport() {
   });
 }
 
-/* ── 동작 사진 업로드 ── */
-var pendingPoseFile = null;
-
-function onPoseImgSelect(inp) {
-  if(!inp.files[0]) return;
-  pendingPoseFile = inp.files[0];
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var prev = document.getElementById('pose-img-preview');
-    prev.innerHTML = '<img src="'+e.target.result+'" style="width:90px;height:90px;object-fit:cover;border-radius:10px">';
-    var inp2 = document.createElement('input');
-    inp2.id='pose-img-inp'; inp2.type='file'; inp2.accept='image/*'; inp2.style.display='none';
-    inp2.onchange=function(){onPoseImgSelect(this);};
-    prev.appendChild(inp2);
-  };
-  reader.readAsDataURL(inp.files[0]);
-  document.getElementById('pose-img-label').textContent = '✓ '+inp.files[0].name;
+/* ── 동작 사진 URL ── */
+function previewPoseUrl(url) {
+  var prev = document.getElementById('pose-img-preview');
+  var img = document.getElementById('pose-preview-img');
+  if(url && url.startsWith('http')) {
+    img.src = url;
+    prev.style.display = 'block';
+  } else {
+    prev.style.display = 'none';
+  }
 }
 
-async function savePoseImage() {
+async function savePoseUrl() {
   var uid = reportCache.userId;
   var weekStart = reportCache.weekStart;
   if(!uid || !weekStart) { showToast('먼저 교사와 주차를 선택해주세요'); return; }
-  if(!pendingPoseFile) { showToast('사진을 선택해주세요'); return; }
+  var url = document.getElementById('pose-url-inp').value.trim();
+  if(!url) { showToast('이미지 URL을 입력해주세요'); return; }
   var btn = document.getElementById('pose-save-btn');
   var msg = document.getElementById('pose-img-msg');
-  btn.disabled=true; btn.textContent='업로드 중...';
+  btn.disabled=true; btn.textContent='저장 중...';
   try {
-    var compressed = await compressImageSmall(pendingPoseFile);
-    var ref = storage.ref('report-images/'+uid+'_'+weekStart+'_pose.jpg');
-    await ref.put(compressed, {contentType:'image/jpeg'});
-    var url = await ref.getDownloadURL();
     await db.collection('weeklyReports').doc(uid+'_'+weekStart).update({ poseImageUrl: url });
-    msg.textContent='✓ 업로드 완료!'; msg.style.color='#4D826C';
+    msg.textContent='✓ 사진이 적용됐어요!'; msg.style.color='#4D826C';
     document.getElementById('pose-remove-btn').style.display='';
-    pendingPoseFile = null;
     showToast('동작 사진이 저장됐어요!');
     setTimeout(function(){msg.textContent='';},3000);
   } catch(e) { msg.textContent='✗ 실패: '+e.message; msg.style.color='#C0392B'; }
-  btn.disabled=false; btn.textContent='업로드';
+  btn.disabled=false; btn.textContent='적용';
 }
 
 async function removePoseImage() {
@@ -2286,8 +2494,10 @@ async function removePoseImage() {
     try {
       await db.collection('weeklyReports').doc(uid+'_'+weekStart).update({ poseImageUrl: '' });
       closeModal();
-      document.getElementById('pose-img-preview').innerHTML = '<span style="font-size:1.5rem">🖼️</span><input id="pose-img-inp" type="file" accept="image/*" style="display:none" onchange="onPoseImgSelect(this)">';
-      document.getElementById('pose-img-label').textContent = '사진을 선택해주세요';
+      var poseInp2 = document.getElementById('pose-url-inp');
+      if(poseInp2) poseInp2.value = '';
+      var prev2 = document.getElementById('pose-img-preview');
+      if(prev2) prev2.style.display = 'none';
       document.getElementById('pose-remove-btn').style.display='none';
       document.getElementById('pose-img-msg').textContent='삭제됐어요';
       setTimeout(function(){document.getElementById('pose-img-msg').textContent='';},2000);
