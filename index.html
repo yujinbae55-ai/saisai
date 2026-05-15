@@ -278,6 +278,15 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
     <!-- 리포트 본문 -->
     <div id="report-notion-body" style="display:none">
       <div class="notion-wrap" id="report-rendered"></div>
+      <!-- 동작 사진 -->
+      <div id="pose-img-display" style="display:none;max-width:680px;margin:0 auto;padding:0 1.5rem">
+        <div style="background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden;margin-bottom:1rem">
+          <img id="pose-img-src" src="" alt="추천 동작 사진" style="width:100%;max-height:360px;object-fit:cover;display:block">
+          <div style="padding:0.75rem 1.1rem;background:#F4F7F4">
+            <p style="font-size:0.78rem;color:#4D826C;font-weight:600;margin:0">🧘 이번 주 추천 동작 사진</p>
+          </div>
+        </div>
+      </div>
 
       <!-- 교사 소감 -->
       <div style="max-width:680px;margin:0 auto;padding:0 1.5rem 4rem">
@@ -422,7 +431,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
             <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">프로그램</label>
             <select id="c-cat" class="sel">
               <option value="body">프로그램 1 — 몸 회복</option>
-              <option value="transition">프로그램 2 — 전이시간</option>
+              <option value="transition">프로그램 2 — 일과 중</option>
               <option value="calm">프로그램 3 — 명상·호흡</option>
             </select>
           </div>
@@ -492,10 +501,33 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
       <div id="report-editor-wrap" style="display:none">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
           <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin:0">리포트 내용 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 자유롭게 수정 가능해요</span></p>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button onclick="resetReportContent()" style="background:#F4F7F4;color:#8FAF9F;border:1px solid #E4EDE8;border-radius:8px;padding:5px 12px;font-size:0.76rem;cursor:pointer;font-family:inherit">초기화</button>
             <button onclick="saveReport()" style="background:#F0F7F3;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">저장</button>
             <button onclick="publishReport()" id="publish-btn" style="background:#4D826C;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">📤 교사 발송</button>
+            <button onclick="unpublishReport()" id="unpublish-btn" style="display:none;background:rgba(192,57,43,0.08);color:#C0392B;border:1px solid rgba(192,57,43,0.2);border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">발송 취소</button>
+          </div>
+          <p id="publish-status" style="font-size:0.74rem;margin-top:6px;min-height:1rem;color:#8FAF9F"></p>
+
+          <!-- 동작 사진 업로드 -->
+          <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #E4EDE8">
+            <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem">추천 동작 사진 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 선택사항</span></p>
+            <p style="font-size:0.75rem;color:#8FAF9F;margin-bottom:0.75rem">업로드하면 교사 리포트에 동작 사진이 함께 표시돼요 (JPG, PNG, WebP)</p>
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+              <div id="pose-img-preview" style="width:90px;height:90px;border-radius:10px;background:#F4F7F4;border:1.5px dashed #C8DDD5;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;cursor:pointer" onclick="document.getElementById('pose-img-inp').click()">
+                <span style="font-size:1.5rem">🖼️</span>
+                <input id="pose-img-inp" type="file" accept="image/*" style="display:none" onchange="onPoseImgSelect(this)">
+              </div>
+              <div style="flex:1;min-width:120px">
+                <p style="font-size:0.76rem;color:#1A2E24;font-weight:500;margin-bottom:6px" id="pose-img-label">사진을 선택해주세요</p>
+                <div style="display:flex;gap:7px">
+                  <button onclick="document.getElementById('pose-img-inp').click()" style="background:#F0F7F3;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:5px 11px;font-size:0.74rem;cursor:pointer;font-family:inherit">사진 선택</button>
+                  <button onclick="savePoseImage()" id="pose-save-btn" style="background:#4D826C;color:#fff;border:none;border-radius:8px;padding:5px 11px;font-size:0.74rem;font-weight:600;cursor:pointer;font-family:inherit">업로드</button>
+                  <button onclick="removePoseImage()" id="pose-remove-btn" style="display:none;background:rgba(192,57,43,0.08);color:#C0392B;border:none;border-radius:8px;padding:5px 11px;font-size:0.74rem;cursor:pointer;font-family:inherit">삭제</button>
+                </div>
+                <p id="pose-img-msg" style="font-size:0.72rem;color:#4D826C;margin-top:5px;min-height:1rem"></p>
+              </div>
+            </div>
           </div>
         </div>
         <textarea id="report-editor" rows="18" style="width:100%;border:1.5px solid #E4EDE8;border-radius:12px;padding:1.1rem;font-size:0.88rem;font-family:inherit;color:#1A2E24;background:#FAFCFA;resize:vertical;line-height:1.75;letter-spacing:-0.01em;transition:border-color 0.15s" placeholder="교사를 선택하면 자동으로 리포트가 생성됩니다" onfocus="this.style.borderColor='#4D826C'" onblur="this.style.borderColor='#E4EDE8'"></textarea>
@@ -565,7 +597,7 @@ var adminCache = { users:[], activities:[], contents:[], surveys:[], programs:[]
 
 var DEFAULT_PROGRAMS = [
   {id:'1', color:'#4D826C', sub:'근육 이완 · 스트레칭', title:'욱씬욱씬 아픈 몸을 회복하자!', desc:'하루 종일 쌓인 근골격계 피로를 풀어드려요', cat:'body'},
-  {id:'2', color:'#3A6B57', sub:'활동 전환 · 움직임 놀이', title:'전이시간을 아이들과 더욱 즐겁게!', desc:'전이 순간을 즐거운 연결고리로 만들어보세요', cat:'transition'},
+  {id:'2', color:'#3A6B57', sub:'활동 전환 · 움직임 놀이', title:'일과 중, 아이들과 더욱 즐겁게!', desc:'일과 사이사이를 즐거운 시간으로 만들어보세요', cat:'transition'},
   {id:'3', color:'#2D5242', sub:'마음챙김 · 호흡 명상', title:'명상과 호흡으로 차분한 우리반 분위기', desc:'잠깐의 호흡으로 교사도 아이도 차분하게 정돈되는 시간', cat:'calm'}
 ];
 var RLABELS = ['매우 불만족','불만족','보통','만족','매우 만족'];
@@ -1125,7 +1157,7 @@ function renderContents() {
   if(!contents.length){cl.appendChild(makeEmptyBox('아직 등록된 콘텐츠가 없어요'));return;}
   var grp={body:[],transition:[],calm:[]};
   contents.forEach(function(c){if(grp[c.cat])grp[c.cat].push(c);});
-  var catLabels={body:'프로그램 1 — 몸 회복',transition:'프로그램 2 — 전이시간',calm:'프로그램 3 — 명상·호흡'};
+  var catLabels={body:'프로그램 1 — 몸 회복',transition:'프로그램 2 — 일과 중',calm:'프로그램 3 — 명상·호흡'};
   Object.keys(grp).forEach(function(cat){
     if(!grp[cat].length) return;
     var sec=ce('div'); sec.style.marginBottom='1rem';
@@ -1294,7 +1326,7 @@ function renderSurveys() {
   var filters = [
     {id:'all', label:'전체'},
     {id:'1', label:'P1 몸 회복'},
-    {id:'2', label:'P2 전이시간'},
+    {id:'2', label:'P2 일과중'},
     {id:'3', label:'P3 명상'},
     {id:'none', label:'미선택'}
   ];
@@ -1317,7 +1349,7 @@ function renderSurveys() {
   if(!filtered.length){ sl.appendChild(makeEmptyBox('해당 프로그램 응답이 없습니다')); return; }
 
   var PROG_COLOR = {'1':'#4D826C','2':'#3A6B57','3':'#2D5242'};
-  var PROG_LABEL = {'1':'P1 몸 회복','2':'P2 전이시간','3':'P3 명상','none':'미선택'};
+  var PROG_LABEL = {'1':'P1 몸 회복','2':'P2 일과중','3':'P3 명상','none':'미선택'};
   var PROG_BG = {'1':'#E8F2EE','2':'#E3F0E8','3':'#DDE9E4','none':'#F4F7F4'};
 
   var box = ce('div'); box.style.cssText='background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden';
@@ -1524,10 +1556,10 @@ function downloadCSV(filename, rows) {
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-var PROG_NAME = {'1':'P1 몸 회복','2':'P2 전이시간','3':'P3 명상'};
+var PROG_NAME = {'1':'P1 몸 회복','2':'P2 일과중','3':'P3 명상'};
 
 function exportTeachersExcel() {
-  var rows = [['교사코드','최초접속일','마지막접속일','총활동횟수','누적시간(초)','누적시간(분)','P1 몸회복(회)','P2 전이시간(회)','P3 명상(회)']];
+  var rows = [['교사코드','최초접속일','마지막접속일','총활동횟수','누적시간(초)','누적시간(분)','P1 몸회복(회)','P2 일과중(회)','P3 명상(회)']];
   adminCache.users.forEach(function(u) {
     var acts = adminCache.activities.filter(function(a){return a.userId===u.userId||a.userId===u.id;});
     var totalSec = acts.reduce(function(s,a){return s+(a.duration||0);},0);
@@ -1566,7 +1598,7 @@ function exportActivitiesExcel() {
 }
 
 function exportSurveysExcel() {
-  var PROG_LBL = {'1':'P1 몸 회복','2':'P2 전이시간','3':'P3 명상','none':'미선택','':'미선택'};
+  var PROG_LBL = {'1':'P1 몸 회복','2':'P2 일과중','3':'P3 명상','none':'미선택','':'미선택'};
   var rows = [['교사코드','별점','프로그램','의견','제출시간']];
   adminCache.surveys.forEach(function(s) {
     rows.push([
@@ -1598,9 +1630,9 @@ var CONTENT_MAP = {
 };
 
 var PROG_INFO = {
-  '1': { sub:'근육 이완·스트레칭', title:'욱씬욱씬 아픈 몸을 회복하자!' },
-  '2': { sub:'활동 전환·움직임 놀이', title:'전이시간을 아이들과 더욱 즐겁게!' },
-  '3': { sub:'마음챙김·호흡 명상', title:'명상과 호흡으로 차분한 우리반 분위기' },
+  '1': { sub:'근육 이완·스트레칭', title:'몸도 마음도 튼튼하게' },
+  '2': { sub:'활동 전환·움직임 놀이', title:'일과 중, 아이들과 더욱 즐겁게!' },
+  '3': { sub:'마음챙김·호흡 명상', title:'차분한 우리반 분위기' },
 };
 
 var YOGA_TIPS = {
@@ -1618,7 +1650,7 @@ var YOGA_TIPS = {
   ],
 };
 
-var PROG_FULL = {'1':'프로그램 1 (몸 회복)','2':'프로그램 2 (전이시간)','3':'프로그램 3 (명상·호흡)'};
+var PROG_FULL = {'1':'프로그램 1 (몸 회복)','2':'프로그램 2 (일과 중)','3':'프로그램 3 (명상·호흡)'};
 var DAYS_KO = ['일','월','화','수','목','금','토'];
 
 function getWeekOptions() {
@@ -1683,6 +1715,36 @@ async function generateReport() {
   document.getElementById('report-stat-cards').style.display = 'grid';
   document.getElementById('report-editor-wrap').style.display = 'block';
   document.getElementById('report-empty').style.display = 'none';
+
+  // 발송 상태 표시
+  var isPublished = false;
+  if(savedSnap && savedSnap.exists) isPublished = !!savedSnap.data().published;
+  var pubBtn = document.getElementById('publish-btn');
+  var unpubBtn = document.getElementById('unpublish-btn');
+  var pubStatus = document.getElementById('publish-status');
+  if(isPublished) {
+    pubBtn.style.display = 'none';
+    unpubBtn.style.display = '';
+    pubStatus.textContent = '✅ 현재 교사에게 발송됨';
+    pubStatus.style.color = '#4D826C';
+  } else {
+    pubBtn.style.display = '';
+    unpubBtn.style.display = 'none';
+    pubStatus.textContent = '';
+  }
+
+  // 기존 사진 불러오기
+  var poseUrl = (savedSnap && savedSnap.exists) ? (savedSnap.data().poseImageUrl || '') : '';
+  var prev = document.getElementById('pose-img-preview');
+  if(poseUrl) {
+    prev.innerHTML = '<img src="'+poseUrl+'" style="width:90px;height:90px;object-fit:cover;border-radius:10px"><input id="pose-img-inp" type="file" accept="image/*" style="display:none" onchange="onPoseImgSelect(this)">';
+    document.getElementById('pose-img-label').textContent = '✓ 사진 등록됨';
+    document.getElementById('pose-remove-btn').style.display = '';
+  } else {
+    prev.innerHTML = '<span style="font-size:1.5rem">🖼️</span><input id="pose-img-inp" type="file" accept="image/*" style="display:none" onchange="onPoseImgSelect(this)">';
+    document.getElementById('pose-img-label').textContent = '사진을 선택해주세요';
+    document.getElementById('pose-remove-btn').style.display = 'none';
+  }
 
   // 지난 주 활동 가져오기
   var prevWeekStart = new Date(weekStart);
@@ -2027,6 +2089,15 @@ async function loadTeacherReport() {
     document.getElementById('report-no-content').style.display = 'none';
     document.getElementById('report-notion-body').style.display = 'block';
     document.getElementById('report-rendered').innerHTML = renderMarkdown(data.content || '');
+    // 동작 사진 표시
+    var poseUrl = data.poseImageUrl || '';
+    var poseDisplay = document.getElementById('pose-img-display');
+    if(poseUrl) {
+      document.getElementById('pose-img-src').src = poseUrl;
+      poseDisplay.style.display = 'block';
+    } else {
+      poseDisplay.style.display = 'none';
+    }
 
     // 소감 초기화
     initFeedbackStars();
@@ -2122,6 +2193,86 @@ async function publishReport() {
     showToast('발송 실패: '+e.message);
   }
   btn.disabled = false; btn.textContent = '📤 교사 발송';
+}
+
+
+/* ── 발송 취소 ── */
+async function unpublishReport() {
+  var uid = reportCache.userId;
+  var weekStart = reportCache.weekStart;
+  if(!uid || !weekStart) return;
+  askDel('발송 취소', '교사 #'+uid+'의 리포트 노출을 취소할까요?\n교사 화면에서 사라집니다.', async function(){
+    try {
+      await db.collection('weeklyReports').doc(uid+'_'+weekStart).update({
+        published: false, unpublishedAt: new Date().toISOString()
+      });
+      closeModal();
+      document.getElementById('unpublish-btn').style.display = 'none';
+      document.getElementById('publish-btn').style.display = '';
+      document.getElementById('publish-status').textContent = '발송이 취소됐어요';
+      document.getElementById('publish-status').style.color = '#C0392B';
+      showToast('리포트 발송이 취소됐어요');
+    } catch(e) { closeModal(); showToast('취소 실패: '+e.message); }
+  });
+}
+
+/* ── 동작 사진 업로드 ── */
+var pendingPoseFile = null;
+
+function onPoseImgSelect(inp) {
+  if(!inp.files[0]) return;
+  pendingPoseFile = inp.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var prev = document.getElementById('pose-img-preview');
+    prev.innerHTML = '<img src="'+e.target.result+'" style="width:90px;height:90px;object-fit:cover;border-radius:10px">';
+    var inp2 = document.createElement('input');
+    inp2.id='pose-img-inp'; inp2.type='file'; inp2.accept='image/*'; inp2.style.display='none';
+    inp2.onchange=function(){onPoseImgSelect(this);};
+    prev.appendChild(inp2);
+  };
+  reader.readAsDataURL(inp.files[0]);
+  document.getElementById('pose-img-label').textContent = '✓ '+inp.files[0].name;
+}
+
+async function savePoseImage() {
+  var uid = reportCache.userId;
+  var weekStart = reportCache.weekStart;
+  if(!uid || !weekStart) { showToast('먼저 교사와 주차를 선택해주세요'); return; }
+  if(!pendingPoseFile) { showToast('사진을 선택해주세요'); return; }
+  var btn = document.getElementById('pose-save-btn');
+  var msg = document.getElementById('pose-img-msg');
+  btn.disabled=true; btn.textContent='업로드 중...';
+  try {
+    var ext = pendingPoseFile.name.split('.').pop();
+    var ref = storage.ref('report-images/'+uid+'_'+weekStart+'_pose.'+ext);
+    await ref.put(pendingPoseFile);
+    var url = await ref.getDownloadURL();
+    await db.collection('weeklyReports').doc(uid+'_'+weekStart).update({ poseImageUrl: url });
+    msg.textContent='✓ 업로드 완료!'; msg.style.color='#4D826C';
+    document.getElementById('pose-remove-btn').style.display='';
+    pendingPoseFile = null;
+    showToast('동작 사진이 저장됐어요!');
+    setTimeout(function(){msg.textContent='';},3000);
+  } catch(e) { msg.textContent='✗ 실패: '+e.message; msg.style.color='#C0392B'; }
+  btn.disabled=false; btn.textContent='업로드';
+}
+
+async function removePoseImage() {
+  var uid = reportCache.userId;
+  var weekStart = reportCache.weekStart;
+  if(!uid||!weekStart) return;
+  askDel('사진 삭제', '등록된 동작 사진을 삭제할까요?', async function(){
+    try {
+      await db.collection('weeklyReports').doc(uid+'_'+weekStart).update({ poseImageUrl: '' });
+      closeModal();
+      document.getElementById('pose-img-preview').innerHTML = '<span style="font-size:1.5rem">🖼️</span><input id="pose-img-inp" type="file" accept="image/*" style="display:none" onchange="onPoseImgSelect(this)">';
+      document.getElementById('pose-img-label').textContent = '사진을 선택해주세요';
+      document.getElementById('pose-remove-btn').style.display='none';
+      document.getElementById('pose-img-msg').textContent='삭제됐어요';
+      setTimeout(function(){document.getElementById('pose-img-msg').textContent='';},2000);
+    } catch(e){ closeModal(); showToast('삭제 실패: '+e.message); }
+  });
 }
 
 /* ── 관리자 주간 목록에 발송 상태 표시 ── */
