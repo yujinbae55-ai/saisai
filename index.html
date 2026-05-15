@@ -741,10 +741,16 @@ async function loadContentList() {
   label.textContent = (lv==='low'?'저강도':'고강도') + ' 콘텐츠';
   list.innerHTML = '<div class="loading"><div class="spinner"></div>불러오는 중...</div>';
   try {
-    // cat / category 필드 둘 다 지원 (관리자 업로드 시 저장된 필드명 기준)
-    var allSnap = await db.collection('content').get();
+    // cat + intensity where 쿼리 (인덱스 불필요 - 단순 필드 필터)
+    var snap = await db.collection('content')
+      .where('cat','==',p.cat)
+      .where('intensity','==',lv)
+      .get().catch(function(){
+        // 인덱스 오류 시 전체 fetch 폴백
+        return db.collection('content').get();
+      });
     var items = [];
-    allSnap.forEach(function(d) {
+    snap.forEach(function(d) {
       var data = Object.assign({id:d.id}, d.data());
       var catField = data.cat || data.category || '';
       var intField = data.intensity || '';
@@ -981,13 +987,17 @@ async function adminRefresh() {
     progSnap.forEach(function(d){pm[d.id]=d.data();});
     adminCache.programs = DEFAULT_PROGRAMS.map(function(p){return pm[p.id]?Object.assign({},p,pm[p.id]):p;});
 
-    // 모든 유저의 activities 가져오기
+    // 모든 유저의 activities 병렬 fetch
     adminCache.activities = [];
-    for (var u of adminCache.users) {
-      var actsSnap = await db.collection('users').doc(u.id).collection('activities').orderBy('startTime','desc').get();
-      actsSnap.forEach(function(d){ adminCache.activities.push(Object.assign({id:d.id},d.data())); });
-    }
-    adminCache.activities.sort(function(a,b){return b.startTime.localeCompare(a.startTime);});
+    var actPromises = adminCache.users.map(function(u){
+      return db.collection('users').doc(u.id).collection('activities').get()
+        .catch(function(){ return {docs:[]}; });
+    });
+    var actSnaps = await Promise.all(actPromises);
+    actSnaps.forEach(function(snap){
+      snap.docs.forEach(function(d){ adminCache.activities.push(Object.assign({id:d.id},d.data())); });
+    });
+    adminCache.activities.sort(function(a,b){ return (b.startTime||'').localeCompare(a.startTime||''); });
 
     renderOv(); renderContents(); renderTeachers(); renderSurveys();
     buildProgEditList();
@@ -1129,7 +1139,15 @@ async function doUpload() {
     var videoUrl = url;
     if (!isUrl && file) {
       var storageRef = storage.ref('videos/'+Date.now()+'_'+file.name);
-      await storageRef.put(file);
+      var uploadTask = storageRef.put(file);
+      // 업로드 진행률 표시
+      uploadTask.on('state_changed', function(snapshot) {
+        var pct = Math.round(snapshot.bytesTransferred / snapshot.totalBytes * 100);
+        var m = document.getElementById('up-msg');
+        m.textContent = '업로드 중... ' + pct + '%';
+        m.style.color = '#4D826C';
+      });
+      await uploadTask;
       videoUrl = await storageRef.getDownloadURL();
     }
     await db.collection('content').add({
@@ -1485,10 +1503,11 @@ async function saveLogo() {
   btn.disabled = true; btn.textContent = '적용 중...';
   try {
     var finalUrl = pendingLogoUrl;
-    // 파일 업로드인 경우 Firebase Storage에 저장
+    // 파일 업로드인 경우 Firebase Storage에 저장 (압축)
     if (pendingLogoFile) {
-      var storageRef = storage.ref('logo/app_logo_' + Date.now() + '.' + pendingLogoFile.name.split('.').pop());
-      await storageRef.put(pendingLogoFile);
+      var compressedLogo = await compressImageLogo(pendingLogoFile);
+      var storageRef = storage.ref('logo/app_logo_' + Date.now() + '.jpg');
+      await storageRef.put(compressedLogo, {contentType:'image/jpeg'});
       finalUrl = await storageRef.getDownloadURL();
     }
     // Firestore에 저장 (모든 관리자가 공유)
@@ -2042,11 +2061,12 @@ async function openTeacherReport() {
   go('p-report');
   // 발송된 리포트 목록 불러오기
   try {
+    // published 복합 인덱스 불필요하게 userId만 where
     var snap = await db.collection('weeklyReports')
       .where('userId','==',currentUser)
-      .where('published','==',true)
       .get();
     var reports = snap.docs.map(function(d){return Object.assign({id:d.id},d.data());})
+      .filter(function(r){return r.published === true;})
       .sort(function(a,b){return b.weekStart.localeCompare(a.weekStart);});
 
     var wsel = document.getElementById('teacher-report-week');
@@ -2244,9 +2264,9 @@ async function savePoseImage() {
   var msg = document.getElementById('pose-img-msg');
   btn.disabled=true; btn.textContent='업로드 중...';
   try {
-    var ext = pendingPoseFile.name.split('.').pop();
-    var ref = storage.ref('report-images/'+uid+'_'+weekStart+'_pose.'+ext);
-    await ref.put(pendingPoseFile);
+    var compressed = await compressImageSmall(pendingPoseFile);
+    var ref = storage.ref('report-images/'+uid+'_'+weekStart+'_pose.jpg');
+    await ref.put(compressed, {contentType:'image/jpeg'});
     var url = await ref.getDownloadURL();
     await db.collection('weeklyReports').doc(uid+'_'+weekStart).update({ poseImageUrl: url });
     msg.textContent='✓ 업로드 완료!'; msg.style.color='#4D826C';
@@ -2299,6 +2319,42 @@ async function initReportSelects() {
     opt.textContent = i===0?'이번 주 ('+w.label+')':w.label;
     wsel.appendChild(opt);
   });
+}
+
+
+/* ════════════════════════════════
+   IMAGE COMPRESSION
+════════════════════════════════ */
+function compressImage(file, maxWidth, quality) {
+  return new Promise(function(resolve) {
+    var maxW = maxWidth || 1200;
+    var q = quality || 0.82;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var w = img.width, h = img.height;
+        if(w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function(blob) {
+          resolve(blob || file);
+        }, 'image/jpeg', q);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function compressImageSmall(file) {
+  return compressImage(file, 800, 0.78);  // 동작 사진용 - 작게
+}
+
+function compressImageLogo(file) {
+  return compressImage(file, 400, 0.88);  // 로고용 - 작게
 }
 
 /* ════════════════════════════════
