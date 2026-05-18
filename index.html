@@ -711,6 +711,10 @@ var actStartTime = null;
 var currentVideoDuration = 0;  // 현재 영상 최대 길이(초)
 var videoEndTimer = null;      // 자동 종료 타이머
 var activitySaving = false;    // 중복 저장 방지 플래그
+var progressTimer = null;      // 주기적 진행 시간 저장 타이머
+var playingStartTime = null;   // 현재 재생 시작 시각
+var accumulatedSec = 0;        // 누적 실재생 시간(초)
+var isVideoPlaying = false;    // 현재 재생 중 여부
 var surveyRating = 0;
 var surveyProgId = '';
 var pendingOk = null;
@@ -938,6 +942,7 @@ async function loadContentList() {
    VIDEO + ACTIVITY LOGGING
 ════════════════════════════════ */
 document.getElementById('video-back-btn').onclick = function() {
+  onVideoPause(); // 재생 중이면 일시정지 처리
   endCurrentActivity();
   document.getElementById('video-player').innerHTML = '';
   go('p-prog');
@@ -956,24 +961,32 @@ async function playContent(c, lv) {
 
   if (ytMatch) {
     var iframe = ce('iframe');
-    iframe.src = 'https://www.youtube.com/embed/'+ytMatch[1]+'?autoplay=1&rel=0&playsinline=0';
+    // enablejsapi=1 로 YouTube postMessage API 활성화
+    iframe.src = 'https://www.youtube.com/embed/'+ytMatch[1]+'?autoplay=1&rel=0&playsinline=0&enablejsapi=1';
     iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;inset:0';
     iframe.allow = 'autoplay; fullscreen; picture-in-picture';
     iframe.allowFullscreen = true;
     iframe.setAttribute('allowfullscreen','');
     player.style.position = 'relative';
     player.appendChild(iframe);
+    // YouTube postMessage 이벤트 수신
+    setupYouTubeListener(iframe);
   } else if (videoUrl) {
     var video = ce('video');
     video.src = videoUrl;
     video.controls = true;
     video.autoplay = true;
-    video.playsinline = false; // 모바일에서 전체화면 허용
+    video.playsinline = false;
     video.setAttribute('playsinline','');
     video.setAttribute('webkit-playsinline','');
     video.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000';
+    // 실재생 시간 감지
+    video.addEventListener('play', function() { onVideoPlay(); });
+    video.addEventListener('playing', function() { onVideoPlay(); });
+    video.addEventListener('pause', function() { onVideoPause(); });
+    video.addEventListener('ended', function() { onVideoEnded(); });
+    video.addEventListener('waiting', function() { onVideoPause(); }); // 버퍼링도 일시정지 처리
     player.appendChild(video);
-    // 재생 시작되면 자동 전체화면 시도
     video.addEventListener('loadedmetadata', function() {
       if (video.requestFullscreen) video.requestFullscreen().catch(function(){});
       else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
@@ -989,6 +1002,7 @@ async function playContent(c, lv) {
   // 이전 미완료 활동 먼저 처리
   await flushPendingActivity();
   sendHeartbeat('watching');
+  resetPlaybackTracking(); // 재생 추적 초기화
   try {
     var now = new Date().toISOString();
     actStartTime = Date.now();
@@ -1003,6 +1017,31 @@ async function playContent(c, lv) {
     });
     currentActivityId = ref.id;
     currentVideoDuration = c.videoDuration || 0;
+
+    // 15초마다 진행 시간 Firebase에 직접 업데이트 (창 닫아도 마지막 값 유지)
+    if(progressTimer) clearInterval(progressTimer);
+    progressTimer = setInterval(async function() {
+      if(!currentActivityId || !actStartTime) { clearInterval(progressTimer); return; }
+      var dur = getPlayedSec();
+      if(dur < 1) return; // 아직 재생 안 했으면 저장 스킵
+      if(currentVideoDuration > 0 && dur > currentVideoDuration) dur = currentVideoDuration;
+      try {
+        await db.collection('users').doc(currentUser)
+          .collection('activities').doc(currentActivityId).update({
+            duration: dur,
+            qualified: dur >= 180
+          });
+        // localStorage도 같이 업데이트 (오프라인 백업)
+        localStorage.setItem(PENDING_KEY, JSON.stringify({
+          userId: currentUser,
+          activityId: currentActivityId,
+          endTime: new Date().toISOString(),
+          duration: dur,
+          qualified: dur >= 180
+        }));
+      } catch(e) {}
+    }, 15000); // 15초마다
+
     // 영상 길이 있으면 자동 종료 타이머
     if(currentVideoDuration > 0) {
       if(videoEndTimer) clearTimeout(videoEndTimer);
@@ -1020,6 +1059,7 @@ async function endCurrentActivity() {
   if (!currentActivityId || !actStartTime || activitySaving) return;
   activitySaving = true;
   if(videoEndTimer) { clearTimeout(videoEndTimer); videoEndTimer = null; }
+  if(progressTimer) { clearInterval(progressTimer); progressTimer = null; }
 
   // actStartTime을 먼저 로컬 변수에 복사 (중간에 null 되는 것 방지)
   var savedStartTime = actStartTime;
@@ -1030,11 +1070,15 @@ async function endCurrentActivity() {
   currentActivityId = null;
   actStartTime = null;
 
-  var dur = Math.floor((Date.now() - savedStartTime) / 1000);
-  // 최소 1초 보장
+  // 실재생 시간 우선 사용 (일시정지 제외)
+  var playedSec = getPlayedSec();
+  var elapsedSec = Math.floor((Date.now() - savedStartTime) / 1000);
+  // 실재생이 측정됐으면 그걸 사용, 아니면 경과 시간 사용 (video 이벤트 미지원 환경 폴백)
+  var dur = playedSec > 0 ? playedSec : elapsedSec;
   if(dur < 1) dur = 1;
   // 영상 길이 캡
   if(currentVideoDuration > 0 && dur > currentVideoDuration) dur = currentVideoDuration;
+  console.log('[end] 실재생:', playedSec+'초 / 경과:', elapsedSec+'초 / 최종:', dur+'초');
   currentVideoDuration = 0;
 
   // localStorage pending도 클리어 (중복 방지)
@@ -1061,6 +1105,7 @@ async function endCurrentActivity() {
       }));
     } catch(e2) {}
   }
+  resetPlaybackTracking();
   activitySaving = false;
   sendHeartbeat('online');
 }
@@ -3033,6 +3078,77 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
+
+/* ════════════════════════════════
+   PLAYBACK TRACKING (실재생 시간)
+════════════════════════════════ */
+
+function onVideoPlay() {
+  if(isVideoPlaying) return;
+  isVideoPlaying = true;
+  playingStartTime = Date.now();
+  console.log('[play] 재생 시작');
+}
+
+function onVideoPause() {
+  if(!isVideoPlaying) return;
+  isVideoPlaying = false;
+  if(playingStartTime) {
+    accumulatedSec += Math.floor((Date.now() - playingStartTime) / 1000);
+    playingStartTime = null;
+    console.log('[pause] 누적 실재생:', accumulatedSec + '초');
+  }
+}
+
+function onVideoEnded() {
+  onVideoPause();
+  console.log('[ended] 영상 종료, 누적:', accumulatedSec + '초');
+}
+
+// 현재 누적 실재생 시간 계산
+function getPlayedSec() {
+  var sec = accumulatedSec;
+  if(isVideoPlaying && playingStartTime) {
+    sec += Math.floor((Date.now() - playingStartTime) / 1000);
+  }
+  return sec;
+}
+
+// YouTube postMessage API 리스너
+var ytListenerAdded = false;
+function setupYouTubeListener(iframe) {
+  // YT Player API 초기화 메시지 전송
+  setTimeout(function() {
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: 'listening', id: 1 }), '*'
+      );
+    } catch(e) {}
+  }, 2000);
+
+  if(ytListenerAdded) return;
+  ytListenerAdded = true;
+
+  window.addEventListener('message', function(e) {
+    try {
+      var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      if(!data || data.event !== 'infoDelivery') return;
+      var info = data.info;
+      if(!info) return;
+      // playerState: 1=playing, 2=paused, 0=ended, 3=buffering
+      if(info.playerState === 1) { onVideoPlay(); }
+      else if(info.playerState === 2 || info.playerState === 3) { onVideoPause(); }
+      else if(info.playerState === 0) { onVideoEnded(); }
+    } catch(e) {}
+  });
+}
+
+function resetPlaybackTracking() {
+  isVideoPlaying = false;
+  playingStartTime = null;
+  accumulatedSec = 0;
+}
+
 /* ════════════════════════════════
    UNLOAD / VISIBILITY HANDLER
 ════════════════════════════════ */
@@ -3049,10 +3165,14 @@ function savePendingActivity() {
   var savedUserId = currentUser;
 
   // 즉시 상태 초기화
+  if(progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+  if(videoEndTimer) { clearTimeout(videoEndTimer); videoEndTimer = null; }
   currentActivityId = null;
   actStartTime = null;
 
-  var dur = Math.floor((Date.now() - savedStartTime) / 1000);
+  var playedSec = getPlayedSec();
+  var elapsedSec = Math.floor((Date.now() - savedStartTime) / 1000);
+  var dur = playedSec > 0 ? playedSec : elapsedSec;
   if(dur < 1) return;
   if(currentVideoDuration > 0 && dur > currentVideoDuration) dur = currentVideoDuration;
 
@@ -3075,14 +3195,16 @@ async function flushPendingActivity() {
     if (!raw) return;
     var p = JSON.parse(raw);
     if (!p || !p.userId || !p.activityId) { localStorage.removeItem(PENDING_KEY); return; }
-    await db.collection('users').doc(p.userId)
-      .collection('activities').doc(p.activityId).update({
-        endTime: p.endTime,
-        duration: p.duration,
-        qualified: p.qualified
-      });
+    var docRef = db.collection('users').doc(p.userId).collection('activities').doc(p.activityId);
+    var snap = await docRef.get().catch(function(){ return null; });
+    var finalDur = p.duration;
+    if(snap && snap.exists) {
+      var existing = snap.data().duration || 0;
+      finalDur = Math.max(existing, p.duration); // 더 큰 값 유지
+    }
+    await docRef.update({ endTime: p.endTime, duration: finalDur, qualified: finalDur >= 180 });
     localStorage.removeItem(PENDING_KEY);
-    console.log('미완료 활동 기록 완료:', p.duration + '초');
+    console.log('[flush] 완료:', finalDur + '초');
   } catch(e) {
     console.warn('pending flush 실패:', e);
   }
