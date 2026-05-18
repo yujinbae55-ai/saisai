@@ -23,6 +23,19 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#C8DDD5;border-radius:10px}
 ::-webkit-scrollbar-track{background:transparent}
+/* ── 실시간 상태 ── */
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.status-online{background:#4D826C;box-shadow:0 0 0 2px rgba(77,130,108,0.3)}
+.status-watching{background:#F4A826;box-shadow:0 0 0 2px rgba(244,168,38,0.3);animation:pulse 1.2s ease-in-out infinite}
+.status-idle{background:#C8DDD5}
+.status-offline{background:#E4EDE8}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 2px rgba(244,168,38,0.3)}50%{box-shadow:0 0 0 5px rgba(244,168,38,0.1)}}
+.status-badge{display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:600;padding:2px 9px;border-radius:8px;white-space:nowrap}
+.status-badge.online{background:#E8F2EE;color:#2D5242}
+.status-badge.watching{background:#FEF3CD;color:#8B6914}
+.status-badge.idle{background:#F4F7F4;color:#8FAF9F}
+.status-badge.offline{background:#F4F4F4;color:#C8C8C8}
+
 /* ── 노션 스타일 리포트 ── */
 .notion-wrap{max-width:680px;margin:0 auto;padding:2rem 1.5rem 4rem;font-family:"Pretendard",-apple-system,sans-serif}
 .notion-h1{font-size:1.9rem;font-weight:700;color:#1A2E24;letter-spacing:-0.04em;line-height:1.3;margin-bottom:0.3rem}
@@ -387,6 +400,15 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
   </div>
   <div class="adm-scroll">
     <div class="adm-sec on" id="asec-ov">
+      <!-- 실시간 접속 현황 -->
+      <div id="presence-summary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;padding:0.9rem 1.1rem;background:#fff;border:1px solid #E4EDE8;border-radius:12px;align-items:center">
+        <span style="font-size:0.78rem;font-weight:600;color:#1A2E24;margin-right:4px">실시간 현황</span>
+        <span class="status-badge watching" id="cnt-watching"><span class="status-dot status-watching"></span>영상 시청 0명</span>
+        <span class="status-badge online" id="cnt-online"><span class="status-dot status-online"></span>접속 중 0명</span>
+        <span class="status-badge idle" id="cnt-idle"><span class="status-dot status-idle"></span>비활성 0명</span>
+        <span class="status-badge offline" id="cnt-offline"><span class="status-dot status-offline"></span>오프라인 0명</span>
+        <span style="font-size:0.68rem;color:#B8D4C8;margin-left:auto" id="presence-updated"></span>
+      </div>
       <div class="row4" id="ov-stats"></div>
       <div class="card" style="margin-bottom:1rem">
         <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:1rem">프로그램별 활동 현황</p>
@@ -706,7 +728,7 @@ function go(id) {
   document.getElementById(id).classList.add('on');
   window.scrollTo(0,0);
 }
-function doLogout() { currentUser=null; go('p-login'); }
+function doLogout() { stopHeartbeat(); setOffline(); stopPresenceWatch(); currentUser=null; go('p-login'); }
 
 /* ════════════════════════════════
    LOGIN
@@ -756,6 +778,7 @@ async function doLogin() {
       if(staleCount > 0) await batch.commit();
     } catch(e) {}
     await loadPrograms();
+    startHeartbeat();
     go('p-home');
   } catch(e) {
     showErr('l-err','접속에 실패했습니다: '+e.message);
@@ -952,6 +975,7 @@ async function playContent(c, lv) {
 
   // 이전 미완료 활동 먼저 처리
   await flushPendingActivity();
+  sendHeartbeat('watching');
   try {
     var now = new Date().toISOString();
     actStartTime = Date.now();
@@ -979,6 +1003,7 @@ async function endCurrentActivity() {
       });
     } catch(e) {}
     currentActivityId = null; actStartTime = null;
+    sendHeartbeat('online');
   }
 }
 
@@ -1079,6 +1104,7 @@ function buildAdminTabs() {
     bar.appendChild(b);
   });
   buildProgEditList();
+  startPresenceWatch();
 }
 
 async function adminRefresh() {
@@ -1355,7 +1381,15 @@ function renderTeachers() {
     var top=ce('div'); top.style.cssText='padding:1rem 1.25rem;display:flex;align-items:center;gap:12px';
     var av=ce('div'); av.style.cssText='width:40px;height:40px;border-radius:10px;background:#4D826C;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.95rem;flex-shrink:0'; av.textContent=uid;
     var inf=ce('div'); inf.style.cssText='flex:1';
-    inf.appendChild(mk('p',{fontSize:'0.95rem',fontWeight:'700',color:'#1A2E24',margin:'0 0 2px',letterSpacing:'-0.03em'},'교사 #'+uid));
+    var nameRow=ce('div'); nameRow.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:2px';
+    nameRow.appendChild(mk('p',{fontSize:'0.95rem',fontWeight:'700',color:'#1A2E24',margin:'0',letterSpacing:'-0.03em'},'교사 #'+uid));
+    // 실시간 상태 뱃지
+    var statusBadge=ce('span'); statusBadge.dataset.presenceUid=uid;
+    var initInfo=getStatusInfo(presenceCache[uid]);
+    statusBadge.className='status-badge '+initInfo.cls;
+    statusBadge.innerHTML='<span class="status-dot '+initInfo.dot+'"></span>'+initInfo.label;
+    nameRow.appendChild(statusBadge);
+    inf.appendChild(nameRow);
     inf.appendChild(mk('p',{fontSize:'0.72rem',color:'#8FAF9F',margin:'0'},'최초 '+fmtDate(u.createdAt)+' · 마지막 '+fmtDate(u.lastSeenAt)));
     var btns=ce('div'); btns.style.cssText='display:flex;gap:6px';
     var wBtn=ce('button'); wBtn.className='wrn-btn'; wBtn.textContent='활동 삭제';
@@ -1754,6 +1788,65 @@ function exportSurveysExcel() {
 
 
 
+
+
+/* ════════════════════════════════
+   PRESENCE VIEWER (관리자)
+════════════════════════════════ */
+var presenceCache = {};
+var presenceUnsub = null;
+
+function getStatusInfo(p) {
+  if(!p) return { cls:'offline', dot:'status-offline', label:'오프라인', emoji:'⚫' };
+  var now = Date.now();
+  var updated = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
+  var elapsed = now - updated; // ms
+  if(elapsed > 120000) // 2분 이상 heartbeat 없음
+    return { cls:'offline', dot:'status-offline', label:'오프라인', emoji:'⚫' };
+  if(p.status === 'watching')
+    return { cls:'watching', dot:'status-watching', label:'영상 시청 중', emoji:'▶️' };
+  if(p.status === 'idle' || elapsed > 300000)
+    return { cls:'idle', dot:'status-idle', label:'5분+ 비활성', emoji:'🟡' };
+  return { cls:'online', dot:'status-online', label:'접속 중', emoji:'🟢' };
+}
+
+function startPresenceWatch() {
+  if(presenceUnsub) presenceUnsub();
+  presenceUnsub = db.collection('presence').onSnapshot(function(snap) {
+    snap.forEach(function(d) { presenceCache[d.id] = d.data(); });
+    // 관리자 교사 카드 상태 뱃지 갱신
+    updatePresenceBadges();
+  }, function(e){ console.warn('presence watch 실패:', e); });
+}
+
+function stopPresenceWatch() {
+  if(presenceUnsub) { presenceUnsub(); presenceUnsub = null; }
+}
+
+function updatePresenceBadges() {
+  var counts = {watching:0, online:0, idle:0, offline:0};
+  document.querySelectorAll('[data-presence-uid]').forEach(function(el) {
+    var uid = el.dataset.presenceUid;
+    var info = getStatusInfo(presenceCache[uid]);
+    el.className = 'status-badge ' + info.cls;
+    el.innerHTML = '<span class="status-dot '+info.dot+'"></span>' + info.label;
+    counts[info.cls] = (counts[info.cls]||0) + 1;
+  });
+  // 개요 탭 카운터 업데이트
+  var w=document.getElementById('cnt-watching');
+  var o=document.getElementById('cnt-online');
+  var i=document.getElementById('cnt-idle');
+  var f=document.getElementById('cnt-offline');
+  var upd=document.getElementById('presence-updated');
+  if(w) w.innerHTML='<span class="status-dot status-watching"></span>영상 시청 '+counts.watching+'명';
+  if(o) o.innerHTML='<span class="status-dot status-online"></span>접속 중 '+counts.online+'명';
+  if(i) i.innerHTML='<span class="status-dot status-idle"></span>비활성 '+counts.idle+'명';
+  if(f) f.innerHTML='<span class="status-dot status-offline"></span>오프라인 '+counts.offline+'명';
+  if(upd) upd.textContent='업데이트 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+// 1분마다 elapsed 기반 상태 재계산 (heartbeat가 와도 elapsed는 증가하므로)
+setInterval(updatePresenceBadges, 60000);
 
 /* ════════════════════════════════
    ACTIVITY EDIT (관리자)
@@ -2744,6 +2837,74 @@ function compressImageLogo(file) {
   return compressImage(file, 400, 0.88);  // 로고용 - 작게
 }
 
+
+
+/* ════════════════════════════════
+   PRESENCE / HEARTBEAT (교사)
+════════════════════════════════ */
+var heartbeatTimer = null;
+
+async function sendHeartbeat(status) {
+  if(!currentUser || !db) return;
+  try {
+    await db.collection('presence').doc(currentUser).set({
+      userId: currentUser,
+      status: status || 'online',           // online | watching | idle
+      activityId: currentActivityId || null,
+      updatedAt: new Date().toISOString()
+    });
+  } catch(e) {}
+}
+
+function startHeartbeat() {
+  stopHeartbeat();
+  sendHeartbeat(currentActivityId ? 'watching' : 'online');
+  heartbeatTimer = setInterval(function() {
+    var now = Date.now();
+    // 5분 이상 아무 상호작용 없으면 idle
+    var status = 'online';
+    if(currentActivityId) status = 'watching';
+    else if(lastInteraction && (now - lastInteraction) > 300000) status = 'idle';
+    sendHeartbeat(status);
+  }, 30000); // 30초마다
+}
+
+function stopHeartbeat() {
+  if(heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+}
+
+async function setOffline() {
+  if(!currentUser || !db) return;
+  try {
+    await db.collection('presence').doc(currentUser).set({
+      userId: currentUser,
+      status: 'offline',
+      activityId: null,
+      updatedAt: new Date().toISOString()
+    });
+  } catch(e) {}
+}
+
+// 마지막 상호작용 시간 추적
+var lastInteraction = Date.now();
+['click','touchstart','keydown','scroll'].forEach(function(ev) {
+  document.addEventListener(ev, function() { lastInteraction = Date.now(); }, { passive: true });
+});
+
+// 로그아웃 / 창 닫기 시 오프라인 처리
+window.addEventListener('beforeunload', function() {
+  setOffline();
+  savePendingActivity();
+});
+document.addEventListener('visibilitychange', function() {
+  if(document.visibilityState === 'hidden') {
+    sendHeartbeat('idle');
+    savePendingActivity();
+  } else {
+    sendHeartbeat(currentActivityId ? 'watching' : 'online');
+    flushPendingActivity();
+  }
+});
 
 /* ════════════════════════════════
    UNLOAD / VISIBILITY HANDLER
