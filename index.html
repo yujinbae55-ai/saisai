@@ -487,16 +487,18 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
     </div>
 
     <div class="adm-sec" id="asec-teach">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.75rem;gap:12px;flex-wrap:wrap">
         <div>
           <h2 style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem;letter-spacing:-0.03em">교사 데이터 관리</h2>
           <p style="font-size:0.82rem;color:#8FAF9F;margin:0">교사별 접속·활동 내역을 확인하고 데이터를 관리해요</p>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0">
-          <button onclick="exportTeachersExcel()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">📥 교사 현황</button>
-          <button onclick="exportActivitiesExcel()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">📥 활동 기록</button>
+          <button onclick="exportTeachersExcel()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit">📥 교사 현황</button>
+          <button onclick="exportActivitiesExcel()" style="background:#E8F2EE;color:#4D826C;border:none;border-radius:9px;padding:0.6rem 1rem;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit">📥 활동 기록</button>
         </div>
       </div>
+      <!-- 그룹 필터 -->
+      <div id="group-filter-bar" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem"></div>
       <div id="teacher-cards" style="display:flex;flex-direction:column;gap:0.8rem"></div>
     </div>
 
@@ -684,6 +686,30 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
       <button onclick="saveActivityEdit()" style="flex:1;padding:0.7rem;background:#4D826C;color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600">저장</button>
     </div>
     <p id="edit-act-msg" style="font-size:0.76rem;color:#4D826C;margin-top:0.6rem;min-height:1rem;text-align:center"></p>
+  </div>
+</div>
+
+<!-- 실험 그룹 편집 모달 -->
+<div id="group-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:18px;padding:2rem 1.75rem;max-width:340px;width:100%">
+    <p style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.25rem;letter-spacing:-0.03em">실험 그룹 설정</p>
+    <p style="font-size:0.78rem;color:#8FAF9F;margin-bottom:1.25rem" id="group-edit-label">교사 #—</p>
+
+    <!-- 자주 쓰는 그룹 빠른 선택 -->
+    <p style="font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:0.6rem">빠른 선택</p>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:1.1rem" id="group-quick-btns"></div>
+
+    <!-- 직접 입력 -->
+    <p style="font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:0.4rem">직접 입력</p>
+    <input id="group-edit-inp" class="inp" placeholder="예: P1, 실험군, 통제군A ..."
+      style="margin-bottom:1.1rem;font-size:0.9rem">
+
+    <div style="display:flex;gap:8px">
+      <button onclick="closeGroupEdit()" style="flex:1;padding:0.7rem;background:#fff;border:1px solid #E4EDE8;color:#8FAF9F;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.88rem">취소</button>
+      <button onclick="clearGroup()" style="padding:0.7rem 1rem;background:rgba(192,57,43,0.07);color:#C0392B;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.82rem">초기화</button>
+      <button onclick="saveGroup()" style="flex:1;padding:0.7rem;background:#4D826C;color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600">저장</button>
+    </div>
+    <p id="group-edit-msg" style="font-size:0.74rem;color:#4D826C;margin-top:0.6rem;min-height:1rem;text-align:center"></p>
   </div>
 </div>
 
@@ -1254,9 +1280,12 @@ async function adminRefresh() {
 
 function renderOv() {
   var st = document.getElementById('ov-stats'); st.innerHTML='';
-  var acts = adminCache.activities;
+  // 연구진 제외한 참여자 데이터만 통계에 반영
+  var pUsers = participantUsers();
+  var acts = participantActivities();
+  var researcherCount = adminCache.users.length - pUsers.length;
   var avgMin = acts.length ? Math.round(acts.reduce(function(a,x){return a+(x.duration||0);},0)/acts.length/60) : 0;
-  [{num:adminCache.users.length,label:'참여 교사',sub:'코드번호로 구분'},
+  [{num:pUsers.length,label:'연구 참여자',sub:researcherCount>0?'연구진 '+researcherCount+'명 제외':'코드번호로 구분'},
    {num:acts.length,label:'총 활동',sub:acts.length?'평균 '+avgMin+'분':'—'},
    {num:adminCache.contents.length,label:'콘텐츠',sub:'저 '+adminCache.contents.filter(function(c){return c.intensity==='low';}).length+' / 고 '+adminCache.contents.filter(function(c){return c.intensity==='high';}).length},
    {num:adminCache.surveys.length,label:'만족도',sub:adminCache.surveys.length?'★ '+(adminCache.surveys.reduce(function(a,s){return a+s.rating;},0)/adminCache.surveys.length).toFixed(1):'—'}
@@ -1269,6 +1298,7 @@ function renderOv() {
   });
 
   var bars = document.getElementById('ov-bars'); bars.innerHTML='';
+  // acts는 이미 participantActivities()로 연구진 제외됨
   var byP={'1':0,'2':0,'3':0};
   acts.forEach(function(a){byP[a.programId]=(byP[a.programId]||0)+1;});
   var mx=Math.max(byP['1'],byP['2'],byP['3'],1);
@@ -1286,7 +1316,8 @@ function renderOv() {
 
   var log=document.getElementById('ov-log'); log.innerHTML='';
   if(!acts.length){log.appendChild(mk('div',{textAlign:'center',padding:'1.5rem',color:'#8FAF9F',fontSize:'0.85rem'},'기록이 없습니다'));return;}
-  acts.slice(0,10).forEach(function(a){
+  var logActs = participantActivities().sort(function(a,b){return (b.startTime||'').localeCompare(a.startTime||'');});
+  logActs.slice(0,10).forEach(function(a){
     var row=ce('div'); row.className='log-row';
     var ico=ce('div'); ico.style.cssText='width:32px;height:32px;border-radius:8px;background:#4D826C;display:flex;align-items:center;justify-content:center;flex-shrink:0'; ico.appendChild(svgPlay());
     var inf=ce('div'); inf.style.cssText='flex:1;min-width:0';
@@ -1521,10 +1552,36 @@ function fmtDurLong(sec){
   return s+'초';
 }
 
+var teacherGroupFilter = 'all';
+
 function renderTeachers() {
   var wrap=document.getElementById('teacher-cards'); wrap.innerHTML='';
   var users=adminCache.users;
   if(!users.length){wrap.appendChild(makeEmptyBox('접속한 교사가 없습니다'));return;}
+
+  // 그룹 필터 버튼 갱신
+  var groups = ['all', ...new Set(users.map(function(u){return u.experimentGroup;}).filter(Boolean))].sort();
+  var fb = document.getElementById('group-filter-bar');
+  if(fb) {
+    fb.innerHTML = '';
+    groups.forEach(function(g) {
+      var b = document.createElement('button');
+      var isAll = g==='all';
+      var isOn = teacherGroupFilter === g;
+      b.style.cssText = 'padding:4px 13px;border-radius:20px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid '+(isOn?'#4D826C':'#E4EDE8')+';background:'+(isOn?'#4D826C':'#fff')+';color:'+(isOn?'#fff':'#8FAF9F');
+      var isResGrp = RESEARCHER_GROUPS.indexOf(g) >= 0;
+      b.textContent = isAll ? '전체 ('+users.length+')' : (isResGrp?'🔬 ':'')+g+' ('+users.filter(function(u){return u.experimentGroup===g;}).length+')';
+      if(isResGrp && isOn) { b.style.background='#E8A020'; b.style.borderColor='#E8A020'; }
+      else if(isResGrp) { b.style.color='#8B6914'; b.style.borderColor='#F0D090'; }
+      b.onclick = function(){ teacherGroupFilter=g; renderTeachers(); };
+      fb.appendChild(b);
+    });
+  }
+
+  // 필터 적용
+  var filtered = teacherGroupFilter==='all' ? users : users.filter(function(u){ return u.experimentGroup===teacherGroupFilter; });
+  if(!filtered.length){wrap.appendChild(makeEmptyBox('해당 그룹에 교사가 없습니다'));return;}
+  users = filtered;
   users.forEach(function(u){
     var acts=adminCache.activities.filter(function(a){return a.userId===u.userId||a.userId===u.id;});
     var totalSec=acts.reduce(function(s,a){return s+(a.duration||0);},0);
@@ -1539,9 +1596,24 @@ function renderTeachers() {
     var top=ce('div'); top.style.cssText='padding:1rem 1.25rem;display:flex;align-items:center;gap:12px';
     var av=ce('div'); av.style.cssText='width:40px;height:40px;border-radius:10px;background:#4D826C;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.95rem;flex-shrink:0'; av.textContent=uid;
     var inf=ce('div'); inf.style.cssText='flex:1';
-    var nameRow=ce('div'); nameRow.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:2px';
+    var nameRow=ce('div'); nameRow.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap';
     nameRow.appendChild(mk('p',{fontSize:'0.95rem',fontWeight:'700',color:'#1A2E24',margin:'0',letterSpacing:'-0.03em'},'교사 #'+uid));
-    // 실시간 상태 뱃지
+    // 실험 그룹 배지
+    var grpBadge=ce('span');
+    var grpVal = u.experimentGroup || '';
+    grpBadge.style.cssText='font-size:0.72rem;font-weight:700;padding:2px 10px;border-radius:8px;cursor:pointer;border:1.5px dashed #C8DDD5;color:#8FAF9F;background:#F4F7F4;white-space:nowrap';
+    grpBadge.textContent = grpVal ? grpVal : '+ 그룹';
+    if(grpVal) {
+      var isResearcher = RESEARCHER_GROUPS.indexOf(grpVal) >= 0;
+      grpBadge.style.background = isResearcher ? '#FEF3CD' : '#E8F2EE';
+      grpBadge.style.color = isResearcher ? '#8B6914' : '#2D5242';
+      grpBadge.style.borderColor = isResearcher ? '#E8A020' : '#4D826C';
+      grpBadge.style.borderStyle = 'solid';
+    }
+    grpBadge.title = '클릭해서 실험 그룹 설정';
+    (function(u2, badge){ grpBadge.onclick=function(){ openGroupEdit(u2, badge); }; })(u, grpBadge);
+    nameRow.appendChild(grpBadge);
+    // 실시간 상태 배지
     var statusBadge=ce('span'); statusBadge.dataset.presenceUid=uid;
     var initInfo=getStatusInfo(presenceCache[uid]);
     statusBadge.className='status-badge '+initInfo.cls;
@@ -1890,14 +1962,15 @@ function downloadCSV(filename, rows) {
 var PROG_NAME = {'1':'P1 몸 회복','2':'P2 일과중','3':'P3 명상'};
 
 function exportTeachersExcel() {
-  var rows = [['교사코드','최초접속일','마지막접속일','총활동횟수','누적시간(초)','누적시간(분)','P1 몸회복(회)','P2 일과중(회)','P3 명상(회)']];
-  adminCache.users.forEach(function(u) {
+  var rows = [['교사코드','실험그룹','최초접속일','마지막접속일','총활동횟수','누적시간(초)','누적시간(분)','P1 몸회복(회)','P2 일과중(회)','P3 명상(회)']];
+  participantUsers().forEach(function(u) { // 연구진 제외
     var acts = adminCache.activities.filter(function(a){return a.userId===u.userId||a.userId===u.id;});
     var totalSec = acts.reduce(function(s,a){return s+(a.duration||0);},0);
     var bp = {'1':0,'2':0,'3':0};
     acts.forEach(function(a){if(bp[a.programId]!==undefined)bp[a.programId]++;});
     rows.push([
       u.userId||u.id,
+      u.experimentGroup||'',
       fmtDate(u.createdAt),
       fmtDate(u.lastSeenAt),
       acts.length,
@@ -1912,7 +1985,7 @@ function exportTeachersExcel() {
 
 function exportActivitiesExcel() {
   var rows = [['교사코드','시작시간','종료시간','소요시간(초)','소요시간(분)','프로그램','강도','콘텐츠제목']];
-  adminCache.activities.forEach(function(a) {
+  participantActivities().forEach(function(a) { // 연구진 제외
     rows.push([
       a.userId,
       a.startTime ? new Date(a.startTime).toLocaleString('ko-KR') : '',
@@ -2016,6 +2089,112 @@ function updatePresenceBadges() {
 
 // 1분마다 elapsed 기반 상태 재계산 (heartbeat가 와도 elapsed는 증가하므로)
 setInterval(updatePresenceBadges, 15000); // 15초마다 elapsed 재계산
+
+
+
+/* ── 연구진 제외 헬퍼 ── */
+function isResearcherUser(u) {
+  return RESEARCHER_GROUPS.indexOf(u.experimentGroup || '') >= 0;
+}
+function participantUsers() {
+  return adminCache.users.filter(function(u){ return !isResearcherUser(u); });
+}
+function participantActivities() {
+  var pIds = new Set(participantUsers().map(function(u){ return u.userId||u.id; }));
+  return adminCache.activities.filter(function(a){ return pIds.has(String(a.userId)); });
+}
+
+/* ════════════════════════════════
+   EXPERIMENT GROUP EDITOR
+════════════════════════════════ */
+var editingGroupUser = null;
+var editingGroupBadge = null;
+
+// 자주 쓰는 그룹 목록 (기존 사용된 그룹 + 기본값)
+var QUICK_GROUPS = ['P1','P2','P3','실험군','통제군','A군','B군','C군','연구진'];
+var RESEARCHER_GROUPS = ['연구진']; // 통계/로그에서 제외할 그룹
+
+function openGroupEdit(u, badge) {
+  editingGroupUser = u;
+  editingGroupBadge = badge;
+  var uid = u.userId || u.id;
+  document.getElementById('group-edit-label').textContent = '교사 #' + uid;
+  document.getElementById('group-edit-inp').value = u.experimentGroup || '';
+  document.getElementById('group-edit-msg').textContent = '';
+
+  // 빠른 선택 버튼 - 기존 사용된 그룹도 포함
+  var usedGroups = [...new Set(adminCache.users.map(function(x){ return x.experimentGroup; }).filter(Boolean))];
+  var allGroups = [...new Set([...QUICK_GROUPS, ...usedGroups])];
+  var qb = document.getElementById('group-quick-btns');
+  qb.innerHTML = '';
+  allGroups.forEach(function(g) {
+    var b = document.createElement('button');
+    var isSelected = g === (u.experimentGroup || '');
+    b.style.cssText = 'padding:5px 13px;border-radius:20px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.13s;border:1.5px solid '+(isSelected?'#4D826C':'#E4EDE8')+';background:'+(isSelected?'#4D826C':'#fff')+';color:'+(isSelected?'#fff':'#6B9080');
+    b.textContent = g;
+    b.onclick = function() {
+      document.getElementById('group-edit-inp').value = g;
+      qb.querySelectorAll('button').forEach(function(x){
+        x.style.background='#fff'; x.style.color='#6B9080'; x.style.borderColor='#E4EDE8';
+      });
+      b.style.background='#4D826C'; b.style.color='#fff'; b.style.borderColor='#4D826C';
+    };
+    qb.appendChild(b);
+  });
+
+  var modal = document.getElementById('group-edit-modal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(function(){ document.getElementById('group-edit-inp').focus(); }, 100);
+}
+
+function closeGroupEdit() {
+  document.getElementById('group-edit-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  editingGroupUser = null;
+  editingGroupBadge = null;
+}
+
+async function saveGroup() {
+  if(!editingGroupUser) return;
+  var uid = editingGroupUser.userId || editingGroupUser.id;
+  var grp = document.getElementById('group-edit-inp').value.trim();
+  var msg = document.getElementById('group-edit-msg');
+  var btn = document.querySelector('#group-edit-modal button:last-of-type');
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    await db.collection('users').doc(uid).update({ experimentGroup: grp });
+    // 로컬 캐시 업데이트
+    editingGroupUser.experimentGroup = grp;
+    // 배지 업데이트
+    if(editingGroupBadge) {
+      editingGroupBadge.textContent = grp || '+ 그룹';
+      if(grp) {
+        var isRes = RESEARCHER_GROUPS.indexOf(grp) >= 0;
+        editingGroupBadge.style.background = isRes ? '#FEF3CD' : '#E8F2EE';
+        editingGroupBadge.style.color = isRes ? '#8B6914' : '#2D5242';
+        editingGroupBadge.style.borderColor = isRes ? '#E8A020' : '#4D826C';
+        editingGroupBadge.style.borderStyle='solid';
+      } else {
+        editingGroupBadge.style.background='#F4F7F4';
+        editingGroupBadge.style.color='#8FAF9F';
+        editingGroupBadge.style.borderColor='#C8DDD5';
+        editingGroupBadge.style.borderStyle='dashed';
+      }
+    }
+    msg.textContent = '✅ 저장됐어요!'; msg.style.color='#4D826C';
+    showToast('그룹 설정 완료!');
+    setTimeout(closeGroupEdit, 800);
+  } catch(e) {
+    msg.textContent = '✗ 실패: ' + e.message; msg.style.color='#C0392B';
+  }
+  btn.disabled = false; btn.textContent = '저장';
+}
+
+async function clearGroup() {
+  document.getElementById('group-edit-inp').value = '';
+  await saveGroup();
+}
 
 /* ════════════════════════════════
    ACTIVITY EDIT (관리자)
