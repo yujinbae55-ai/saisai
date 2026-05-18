@@ -459,6 +459,10 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
               <option value="high">고강도 — 활발하게</option>
             </select>
           </div>
+          <div>
+            <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">영상 길이 (초) <span style="color:#B8D4C8;font-weight:400">— 시청 시간 캡에 사용</span></label>
+            <input id="c-videodur" class="inp" type="number" min="0" placeholder="예: 300 (5분=300초)">
+          </div>
         </div>
         <div id="file-zone" style="border:1.5px dashed #C8DDD5;border-radius:10px;padding:1rem;text-align:center;background:#FAFCFA;margin-bottom:0.75rem;cursor:pointer" onclick="document.getElementById('file-inp').click()">
           <p style="font-size:0.84rem;color:#8FAF9F;margin:0" id="file-label">클릭해서 영상 파일 선택 (MP4, MOV, WebM)</p>
@@ -473,9 +477,12 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
           <span id="up-msg" style="font-size:0.82rem"></span>
         </div>
       </div>
-      <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:0.75rem">
-        등록된 콘텐츠 <span id="cont-cnt" style="color:#8FAF9F;font-weight:400">(0개)</span>
-      </p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:8px">
+        <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin:0">
+          등록된 콘텐츠 <span id="cont-cnt" style="color:#8FAF9F;font-weight:400">(0개)</span>
+        </p>
+        <button onclick="applyVideoDurations()" style="background:#E8F2EE;color:#4D826C;border:1px solid #C8DDD5;border-radius:8px;padding:5px 12px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">⏱ A~F 영상 길이 자동 적용</button>
+      </div>
       <div id="cont-list"></div>
     </div>
 
@@ -701,6 +708,8 @@ var currentProg = null;
 var currentIntensity = 'low';
 var currentActivityId = null;
 var actStartTime = null;
+var currentVideoDuration = 0;  // 현재 영상 최대 길이(초)
+var videoEndTimer = null;      // 자동 종료 타이머
 var surveyRating = 0;
 var surveyProgId = '';
 var pendingOk = null;
@@ -985,24 +994,40 @@ async function playContent(c, lv) {
       intensity: lv,
       startTime: now,
       contentTitle: c.title,
-      contentId: c.id
+      contentId: c.id,
+      videoDuration: c.videoDuration || 0  // 영상 최대 길이
     });
     currentActivityId = ref.id;
+    currentVideoDuration = c.videoDuration || 0;
+    // 영상 길이 있으면 자동 종료 타이머
+    if(currentVideoDuration > 0) {
+      if(videoEndTimer) clearTimeout(videoEndTimer);
+      videoEndTimer = setTimeout(async function() {
+        console.log('[auto-end] 영상 길이 도달, 자동 종료');
+        await endCurrentActivity();
+        showToast('✅ 활동이 기록됐어요!');
+      }, currentVideoDuration * 1000);
+    }
   } catch(e) { console.warn('Activity log failed:', e); }
   go('p-video');
 }
 
 async function endCurrentActivity() {
   if (currentActivityId && actStartTime) {
+    if(videoEndTimer) { clearTimeout(videoEndTimer); videoEndTimer = null; }
     var dur = Math.floor((Date.now() - actStartTime) / 1000);
+    // [3] 영상 길이 캡 - 실제 영상보다 길게 측정되면 영상 길이로 고정
+    if(currentVideoDuration > 0 && dur > currentVideoDuration) {
+      dur = currentVideoDuration;
+    }
     try {
       await db.collection('users').doc(currentUser).collection('activities').doc(currentActivityId).update({
         endTime: new Date().toISOString(),
         duration: dur,
-        qualified: dur >= 180  // 3분 이상 여부 플래그
+        qualified: dur >= 180
       });
     } catch(e) {}
-    currentActivityId = null; actStartTime = null;
+    currentActivityId = null; actStartTime = null; currentVideoDuration = 0;
     sendHeartbeat('online');
   }
 }
@@ -1145,6 +1170,7 @@ async function adminRefresh() {
     buildProgEditList();
     showToast('새로고침 완료!');
     initReportSelects();
+    updatePresenceBadges(); // DOM 재생성 후 뱃지 갱신
   } catch(e) { showToast('오류: '+e.message); }
 }
 
@@ -1187,7 +1213,10 @@ function renderOv() {
     var ico=ce('div'); ico.style.cssText='width:32px;height:32px;border-radius:8px;background:#4D826C;display:flex;align-items:center;justify-content:center;flex-shrink:0'; ico.appendChild(svgPlay());
     var inf=ce('div'); inf.style.cssText='flex:1;min-width:0';
     inf.appendChild(mk('p',{fontSize:'0.83rem',fontWeight:'600',color:'#1A2E24',margin:'0 0 1px',letterSpacing:'-0.02em',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},'교사 #'+a.userId+' · '+a.contentTitle));
-    inf.appendChild(mk('p',{fontSize:'0.72rem',color:'#8FAF9F',margin:'0'},fmtDate(a.startTime)+' · '+(a.duration?fmtDurLong(a.duration):'진행 중')));
+    inf.appendChild(mk('p',{fontSize:'0.72rem',color:'#8FAF9F',margin:'0'},fmtDate(a.startTime)+' · '+(a.duration ? fmtDurLong(a.duration) : (function(){
+      var elapsed = Math.floor((Date.now()-new Date(a.startTime).getTime())/1000);
+      return '⏱ '+fmtDurLong(elapsed)+' (진행 중)';
+    })())));
     var bdg=ce('span'); bdg.className=a.intensity==='low'?'bdg-low':'bdg-high'; bdg.textContent=a.intensity==='low'?'저강도':'고강도';
     var del=ce('button'); del.className='del-btn'; del.style.marginLeft='6px'; del.textContent='삭제';
     del.onclick=(function(act){return function(){
@@ -1292,12 +1321,15 @@ async function doUpload() {
       await uploadTask;
       videoUrl = await storageRef.getDownloadURL();
     }
+    var videoDurEl = document.getElementById('c-videodur');
+    var videoDuration = videoDurEl && videoDurEl.value ? parseInt(videoDurEl.value) : 0;
     await db.collection('content').add({
       title:title,
       desc:document.getElementById('c-desc').value,
       cat:document.getElementById('c-cat').value,
       intensity:document.getElementById('c-int').value,
       url:videoUrl,
+      videoDuration: videoDuration || 0,
       createdAt:new Date().toISOString()
     });
     msg.textContent='✓ 등록 완료!';
@@ -1308,6 +1340,45 @@ async function doUpload() {
   } catch(e){msg.textContent='✗ 실패: '+e.message; msg.style.color='#C0392B';}
   btn.disabled=false; btn.textContent='업로드하기';
   setTimeout(function(){msg.textContent='';},3500);
+}
+
+/* ── 영상 길이 일괄 적용 ── */
+// 콘텐츠 제목에서 A~F 매칭해서 videoDuration 업데이트
+var VIDEO_DUR_MAP = {
+  '살짝 풀어봐요': 325,
+  '바위섬과 보물찾기': 376,
+  '나는 쑥쑥 크는 씨앗': 274,
+  '동물 친구들을 만나요': 269,
+  '구름 타고 하늘 여행': 292,
+  '숲속에서 쉿': 316,
+};
+
+async function applyVideoDurations() {
+  if(!adminCache.contents.length) { showToast('먼저 새로고침 해주세요'); return; }
+  var btn = document.querySelector('[onclick="applyVideoDurations()"]');
+  btn.disabled = true; btn.textContent = '적용 중...';
+  var updated = 0;
+  try {
+    var batch = db.batch();
+    adminCache.contents.forEach(function(c) {
+      // 제목에서 A~F 매핑
+      var matched = Object.keys(VIDEO_DUR_MAP).find(function(key) {
+        return c.title && c.title.includes(key);
+      });
+      if(matched) {
+        var dur = VIDEO_DUR_MAP[matched];
+        batch.update(db.collection('content').doc(c.id), { videoDuration: dur });
+        c.videoDuration = dur; // 로컬 캐시도 업데이트
+        updated++;
+      }
+    });
+    await batch.commit();
+    showToast('✅ ' + updated + '개 콘텐츠에 영상 길이 적용됐어요!');
+    renderContents();
+  } catch(e) {
+    showToast('실패: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = '⏱ A~F 영상 길이 자동 적용';
 }
 
 function renderContents() {
@@ -1326,9 +1397,18 @@ function renderContents() {
     grp[cat].forEach(function(c,i){
       var row=ce('div'); row.style.cssText='display:flex;align-items:center;padding:0.8rem 1rem;border-bottom:'+(i<grp[cat].length-1?'1px solid #F0F7F3':'none')+';gap:10px';
       var inf=ce('div'); inf.style.cssText='flex:1;min-width:0';
+      var durLabel = c.videoDuration ? ' · '+fmtDurLong(c.videoDuration) : '';
       inf.appendChild(mk('p',{fontSize:'0.88rem',fontWeight:'600',color:'#1A2E24',margin:'0 0 1px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},c.title));
-      if(c.desc)inf.appendChild(mk('p',{fontSize:'0.74rem',color:'#8FAF9F',margin:'0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},c.desc));
+      if(c.desc||c.videoDuration) inf.appendChild(mk('p',{fontSize:'0.74rem',color:'#8FAF9F',margin:'0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},(c.desc||'')+durLabel));
       var bdg=ce('span'); bdg.className=c.intensity==='low'?'bdg-low':'bdg-high'; bdg.textContent=c.intensity==='low'?'저강도':'고강도';
+      // 영상 길이 뱃지
+      if(c.videoDuration) {
+        var durBdg=ce('span'); durBdg.style.cssText='font-size:0.68rem;font-weight:600;color:#6B9080;background:#F0F7F3;padding:3px 8px;border-radius:7px;white-space:nowrap;flex-shrink:0';
+        durBdg.textContent='⏱ '+fmtDurLong(c.videoDuration);
+        row.appendChild(inf); row.appendChild(bdg); row.appendChild(durBdg);
+      } else {
+        row.appendChild(inf); row.appendChild(bdg);
+      }
       var del=ce('button'); del.className='del-btn'; del.textContent='삭제';
       del.onclick=(function(cid,curl){return function(){
         askDel('콘텐츠 삭제','"'+c.title+'"\n을 삭제할까요?',async function(){
@@ -1337,7 +1417,7 @@ function renderContents() {
           closeModal(); await adminRefresh();
         });
       };})(c.id, c.url);
-      row.appendChild(inf); row.appendChild(bdg); row.appendChild(del); box.appendChild(row);
+      row.appendChild(del); box.appendChild(row);
     });
     sec.appendChild(box); cl.appendChild(sec);
   });
@@ -1813,10 +1893,21 @@ function getStatusInfo(p) {
 function startPresenceWatch() {
   if(presenceUnsub) presenceUnsub();
   presenceUnsub = db.collection('presence').onSnapshot(function(snap) {
-    snap.forEach(function(d) { presenceCache[d.id] = d.data(); });
-    // 관리자 교사 카드 상태 뱃지 갱신
+    // 전체 재갱신 (삭제된 문서도 반영)
+    snap.docChanges().forEach(function(change) {
+      if(change.type === 'removed') {
+        delete presenceCache[change.doc.id];
+      } else {
+        presenceCache[change.doc.id] = change.doc.data();
+      }
+    });
+    console.log('[presence] 업데이트:', Object.keys(presenceCache).length+'명');
     updatePresenceBadges();
-  }, function(e){ console.warn('presence watch 실패:', e); });
+  }, function(e){
+    console.warn('[presence watch 실패]', e.message);
+    // 권한 오류면 5초 후 재시도
+    setTimeout(startPresenceWatch, 5000);
+  });
 }
 
 function stopPresenceWatch() {
@@ -1846,7 +1937,7 @@ function updatePresenceBadges() {
 }
 
 // 1분마다 elapsed 기반 상태 재계산 (heartbeat가 와도 elapsed는 증가하므로)
-setInterval(updatePresenceBadges, 60000);
+setInterval(updatePresenceBadges, 15000); // 15초마다 elapsed 재계산
 
 /* ════════════════════════════════
    ACTIVITY EDIT (관리자)
@@ -2112,12 +2203,12 @@ var reportCache = { userId:'', weekStart:'', acts:[], savedContent:'' };
 
 // 실제 콘텐츠 구성 (A~F)
 var CONTENT_MAP = {
-  'A': { name:'살짝 풀어봐요', prog:'1', intensity:'저강도' },
-  'B': { name:'바위섬과 보물찾기', prog:'1', intensity:'고강도' },
-  'C': { name:'나는 쑥쑥 크는 씨앗!', prog:'2', intensity:'저강도' },
-  'D': { name:'동물 친구들을 만나요', prog:'2', intensity:'고강도' },
-  'E': { name:'구름 타고 하늘 여행', prog:'3', intensity:'저강도' },
-  'F': { name:'숲속에서 쉿!', prog:'3', intensity:'저강도' },
+  'A': { name:'살짝 풀어봐요',       prog:'1', intensity:'저강도', dur:325 },
+  'B': { name:'바위섬과 보물찾기',   prog:'1', intensity:'고강도', dur:376 },
+  'C': { name:'나는 쑥쑥 크는 씨앗!', prog:'2', intensity:'저강도', dur:274 },
+  'D': { name:'동물 친구들을 만나요', prog:'2', intensity:'고강도', dur:269 },
+  'E': { name:'구름 타고 하늘 여행', prog:'3', intensity:'저강도', dur:292 },
+  'F': { name:'숲속에서 쉿!',        prog:'3', intensity:'저강도', dur:316 },
 };
 
 var PROG_INFO = {
@@ -2849,11 +2940,14 @@ async function sendHeartbeat(status) {
   try {
     await db.collection('presence').doc(currentUser).set({
       userId: currentUser,
-      status: status || 'online',           // online | watching | idle
+      status: status || 'online',
       activityId: currentActivityId || null,
       updatedAt: new Date().toISOString()
     });
-  } catch(e) {}
+    console.log('[heartbeat]', currentUser, status||'online');
+  } catch(e) {
+    console.warn('[heartbeat 실패]', e.message);
+  }
 }
 
 function startHeartbeat() {
@@ -2866,7 +2960,7 @@ function startHeartbeat() {
     if(currentActivityId) status = 'watching';
     else if(lastInteraction && (now - lastInteraction) > 300000) status = 'idle';
     sendHeartbeat(status);
-  }, 30000); // 30초마다
+  }, 15000); // 15초마다
 }
 
 function stopHeartbeat() {
@@ -2917,6 +3011,8 @@ function savePendingActivity() {
   if (!currentActivityId || !actStartTime || !currentUser) return;
   var dur = Math.floor((Date.now() - actStartTime) / 1000);
   if (dur < 1) return;
+  // 영상 길이 캡 적용
+  if(currentVideoDuration > 0 && dur > currentVideoDuration) dur = currentVideoDuration;
   try {
     localStorage.setItem(PENDING_KEY, JSON.stringify({
       userId: currentUser,
@@ -3200,6 +3296,12 @@ var db, storage;
     console.log("Firebase 초기화 완료");
     loadSavedLogo();
     flushPendingActivity(); // 이전 미완료 활동 업로드
+    // 관리자 로그 30초마다 자동 갱신 (진행 중 경과 시간)
+    setInterval(function(){
+      if(document.getElementById('asec-ov') && document.getElementById('asec-ov').classList.contains('on')) {
+        renderOv();
+      }
+    }, 30000);
   } catch(e) {
     console.error("Firebase 초기화 실패:", e);
   }
