@@ -710,6 +710,7 @@ var currentActivityId = null;
 var actStartTime = null;
 var currentVideoDuration = 0;  // 현재 영상 최대 길이(초)
 var videoEndTimer = null;      // 자동 종료 타이머
+var activitySaving = false;    // 중복 저장 방지 플래그
 var surveyRating = 0;
 var surveyProgId = '';
 var pendingOk = null;
@@ -730,7 +731,10 @@ function go(id) {
   // 비디오 페이지에서 벗어날 때 자동으로 활동 종료
   var currentPage = document.querySelector('.page.on');
   if (currentPage && currentPage.id === 'p-video' && id !== 'p-video') {
-    endCurrentActivity();
+    // async endCurrentActivity를 fire-and-forget으로 호출 (충돌 방지)
+    if(currentActivityId && actStartTime) {
+      endCurrentActivity(); // 비동기지만 순서 보장됨
+    }
     document.getElementById('video-player').innerHTML = '';
   }
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
@@ -1013,23 +1017,52 @@ async function playContent(c, lv) {
 }
 
 async function endCurrentActivity() {
-  if (currentActivityId && actStartTime) {
-    if(videoEndTimer) { clearTimeout(videoEndTimer); videoEndTimer = null; }
-    var dur = Math.floor((Date.now() - actStartTime) / 1000);
-    // [3] 영상 길이 캡 - 실제 영상보다 길게 측정되면 영상 길이로 고정
-    if(currentVideoDuration > 0 && dur > currentVideoDuration) {
-      dur = currentVideoDuration;
-    }
-    try {
-      await db.collection('users').doc(currentUser).collection('activities').doc(currentActivityId).update({
+  if (!currentActivityId || !actStartTime || activitySaving) return;
+  activitySaving = true;
+  if(videoEndTimer) { clearTimeout(videoEndTimer); videoEndTimer = null; }
+
+  // actStartTime을 먼저 로컬 변수에 복사 (중간에 null 되는 것 방지)
+  var savedStartTime = actStartTime;
+  var savedActivityId = currentActivityId;
+  var savedUserId = currentUser;
+
+  // 상태 즉시 초기화 (다른 핸들러가 중복 실행 안 하도록)
+  currentActivityId = null;
+  actStartTime = null;
+
+  var dur = Math.floor((Date.now() - savedStartTime) / 1000);
+  // 최소 1초 보장
+  if(dur < 1) dur = 1;
+  // 영상 길이 캡
+  if(currentVideoDuration > 0 && dur > currentVideoDuration) dur = currentVideoDuration;
+  currentVideoDuration = 0;
+
+  // localStorage pending도 클리어 (중복 방지)
+  localStorage.removeItem(PENDING_KEY);
+
+  try {
+    await db.collection('users').doc(savedUserId)
+      .collection('activities').doc(savedActivityId).update({
         endTime: new Date().toISOString(),
         duration: dur,
         qualified: dur >= 180
       });
-    } catch(e) {}
-    currentActivityId = null; actStartTime = null; currentVideoDuration = 0;
-    sendHeartbeat('online');
+    console.log('[activity end]', savedActivityId, dur+'초', dur>=180?'⭐':'');
+  } catch(e) {
+    console.warn('[activity end 실패]', e.message);
+    // 실패 시 localStorage에 백업
+    try {
+      localStorage.setItem(PENDING_KEY, JSON.stringify({
+        userId: savedUserId,
+        activityId: savedActivityId,
+        endTime: new Date().toISOString(),
+        duration: dur,
+        qualified: dur >= 180
+      }));
+    } catch(e2) {}
   }
+  activitySaving = false;
+  sendHeartbeat('online');
 }
 
 function toggleFullscreen() {
@@ -3008,22 +3041,31 @@ var PENDING_KEY = 'ss_pending_activity';
 
 // 미완료 활동을 localStorage에 저장 (페이지 닫혀도 유실 안 됨)
 function savePendingActivity() {
-  if (!currentActivityId || !actStartTime || !currentUser) return;
-  var dur = Math.floor((Date.now() - actStartTime) / 1000);
-  if (dur < 1) return;
-  // 영상 길이 캡 적용
+  // endCurrentActivity가 이미 처리 중이면 스킵
+  if (!currentActivityId || !actStartTime || !currentUser || activitySaving) return;
+
+  var savedStartTime = actStartTime;
+  var savedActivityId = currentActivityId;
+  var savedUserId = currentUser;
+
+  // 즉시 상태 초기화
+  currentActivityId = null;
+  actStartTime = null;
+
+  var dur = Math.floor((Date.now() - savedStartTime) / 1000);
+  if(dur < 1) return;
   if(currentVideoDuration > 0 && dur > currentVideoDuration) dur = currentVideoDuration;
+
   try {
     localStorage.setItem(PENDING_KEY, JSON.stringify({
-      userId: currentUser,
-      activityId: currentActivityId,
+      userId: savedUserId,
+      activityId: savedActivityId,
       endTime: new Date().toISOString(),
       duration: dur,
       qualified: dur >= 180
     }));
+    console.log('[pending saved]', savedActivityId, dur+'초');
   } catch(e) {}
-  currentActivityId = null;
-  actStartTime = null;
 }
 
 // 앱 로드 시 미완료 활동 Firebase에 업로드
