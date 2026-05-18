@@ -666,6 +666,12 @@ var CATNAME = {body:'프로그램 1',transition:'프로그램 2',calm:'프로그
    NAVIGATION
 ════════════════════════════════ */
 function go(id) {
+  // 비디오 페이지에서 벗어날 때 자동으로 활동 종료
+  var currentPage = document.querySelector('.page.on');
+  if (currentPage && currentPage.id === 'p-video' && id !== 'p-video') {
+    endCurrentActivity();
+    document.getElementById('video-player').innerHTML = '';
+  }
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
   document.getElementById(id).classList.add('on');
   window.scrollTo(0,0);
@@ -2598,6 +2604,64 @@ function compressImageSmall(file) {
 function compressImageLogo(file) {
   return compressImage(file, 400, 0.88);  // 로고용 - 작게
 }
+
+
+/* ════════════════════════════════
+   UNLOAD / VISIBILITY HANDLER
+════════════════════════════════ */
+
+// 창 닫기 / 탭 전환 / 새로고침 시 동기적으로 기록 (sendBeacon 사용)
+function syncEndActivity() {
+  if (!currentActivityId || !actStartTime || !currentUser) return;
+  var dur = Math.floor((Date.now() - actStartTime) / 1000);
+  if (dur < 1) return;
+  // Firestore REST API로 동기 기록 (sendBeacon은 비동기 fetch 불가)
+  var projectId = 'saisai-wellness';
+  var docPath = 'users/' + currentUser + '/activities/' + currentActivityId;
+  var url = 'https://firestore.googleapis.com/v1/projects/' + projectId + '/databases/(default)/documents/' + docPath + '?updateMask.fieldPaths=endTime&updateMask.fieldPaths=duration&updateMask.fieldPaths=qualified';
+  var body = JSON.stringify({
+    fields: {
+      endTime: { stringValue: new Date().toISOString() },
+      duration: { integerValue: String(dur) },
+      qualified: { booleanValue: dur >= 180 }
+    }
+  });
+  // sendBeacon으로 페이지 닫혀도 전송
+  var blob = new Blob([body], { type: 'application/json' });
+  navigator.sendBeacon(
+    'https://firestore.googleapis.com/v1/projects/' + projectId + '/databases/(default)/documents/' + docPath,
+    blob
+  );
+  // 일반 상황에선 SDK로도 처리
+  try {
+    if (db && currentActivityId) {
+      db.collection('users').doc(currentUser).collection('activities').doc(currentActivityId).update({
+        endTime: new Date().toISOString(),
+        duration: dur,
+        qualified: dur >= 180
+      });
+    }
+  } catch(e) {}
+  currentActivityId = null;
+  actStartTime = null;
+}
+
+// 창 닫기 / 새로고침
+window.addEventListener('beforeunload', function() {
+  syncEndActivity();
+});
+
+// 탭 숨김 (다른 탭으로 이동, 앱 스위치)
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden') {
+    syncEndActivity();
+  }
+});
+
+// 모바일 앱 백그라운드
+window.addEventListener('pagehide', function() {
+  syncEndActivity();
+});
 
 /* ════════════════════════════════
    LOGO MANAGEMENT
