@@ -628,6 +628,36 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
   </div>
 </div>
 
+<!-- 활동 시간 수정 모달 -->
+<div id="activity-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:18px;padding:2rem 1.75rem;max-width:360px;width:100%">
+    <p style="font-size:1rem;font-weight:700;color:#1A2E24;margin-bottom:0.25rem;letter-spacing:-0.03em">활동 기록 수정</p>
+    <p style="font-size:0.78rem;color:#8FAF9F;margin-bottom:1.5rem" id="edit-act-label"></p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem">
+      <div>
+        <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">시작 시간</label>
+        <input id="edit-start" type="datetime-local" class="inp" style="font-size:0.82rem">
+      </div>
+      <div>
+        <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">종료 시간</label>
+        <input id="edit-end" type="datetime-local" class="inp" style="font-size:0.82rem" oninput="calcEditDuration()">
+      </div>
+    </div>
+
+    <div style="background:#F4F7F4;border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:0.78rem;color:#8FAF9F">계산된 시청 시간</span>
+      <span id="edit-duration-preview" style="font-size:0.95rem;font-weight:700;color:#4D826C">—</span>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button onclick="closeActivityEdit()" style="flex:1;padding:0.7rem;background:#fff;border:1px solid #E4EDE8;color:#8FAF9F;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.88rem">취소</button>
+      <button onclick="saveActivityEdit()" style="flex:1;padding:0.7rem;background:#4D826C;color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600">저장</button>
+    </div>
+    <p id="edit-act-msg" style="font-size:0.76rem;color:#4D826C;margin-top:0.6rem;min-height:1rem;text-align:center"></p>
+  </div>
+</div>
+
 <!-- Modal -->
 <div id="modal" class="modal-overlay" style="display:none">
   <div class="modal-box">
@@ -706,6 +736,25 @@ async function doLogin() {
     }
     currentUser = code;
     document.getElementById('u-code').textContent = code;
+    // 이전 세션 미완료 활동 처리
+    await flushPendingActivity();
+    // "진행 중" 상태 오래된 기록 자동 종료 (1시간 이상 된 것)
+    try {
+      var staleSnap = await db.collection('users').doc(code).collection('activities')
+        .where('duration','==',0).get().catch(function(){return {docs:[]};});
+      var cutoff = new Date(Date.now() - 3600000).toISOString(); // 1시간 전
+      var batch = db.batch();
+      var staleCount = 0;
+      staleSnap.docs.forEach(function(d) {
+        var data = d.data();
+        if (!data.endTime && data.startTime < cutoff) {
+          var dur = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000);
+          batch.update(d.ref, { endTime: new Date().toISOString(), duration: dur, qualified: dur >= 180, staleClosed: true });
+          staleCount++;
+        }
+      });
+      if(staleCount > 0) await batch.commit();
+    } catch(e) {}
     await loadPrograms();
     go('p-home');
   } catch(e) {
@@ -901,6 +950,8 @@ async function playContent(c, lv) {
     player.appendChild(ph);
   }
 
+  // 이전 미완료 활동 먼저 처리
+  await flushPendingActivity();
   try {
     var now = new Date().toISOString();
     actStartTime = Date.now();
@@ -1372,7 +1423,11 @@ function renderTeachers() {
         txt.appendChild(mk('p',{fontSize:'0.78rem',fontWeight:'600',color:pColors[a.programId]||'#4D826C',margin:'0 0 1px'},'P'+a.programId+' — '+a.contentTitle));
         var qualMark = (a.qualified||(a.duration&&a.duration>=180)) ? ' ⭐' : '';
         txt.appendChild(mk('p',{fontSize:'0.7rem',color:'#8FAF9F',margin:'0'},fmtFull(a.startTime)+' · '+fmtDurLong(a.duration)+(a.intensity==='low'?' · 저강도':' · 고강도')+qualMark));
-        item.appendChild(dot); item.appendChild(txt); timeline.appendChild(item);
+        // 시간 수정 버튼
+        var editBtn = ce('button'); editBtn.className='edt-btn'; editBtn.textContent='수정';
+        editBtn.style.cssText='flex-shrink:0;font-size:0.68rem;padding:2px 8px';
+        (function(act){ editBtn.onclick=function(){ openActivityEdit(act); }; })(a);
+        item.appendChild(dot); item.appendChild(txt); item.appendChild(editBtn); timeline.appendChild(item);
       });
       detail.appendChild(timeline);
     } else {
@@ -1698,6 +1753,90 @@ function exportSurveysExcel() {
 }
 
 
+
+
+/* ════════════════════════════════
+   ACTIVITY EDIT (관리자)
+════════════════════════════════ */
+var editingActivity = null;
+
+function toLocalDatetimeStr(isoStr) {
+  if(!isoStr) return '';
+  var d = new Date(isoStr);
+  // datetime-local input 형식: YYYY-MM-DDTHH:MM
+  var pad = function(n){ return String(n).padStart(2,'0'); };
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())
+    +'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+function openActivityEdit(act) {
+  editingActivity = act;
+  var modal = document.getElementById('activity-edit-modal');
+  var label = document.getElementById('edit-act-label');
+  label.textContent = '교사 #'+act.userId+' · '+act.contentTitle;
+  document.getElementById('edit-start').value = toLocalDatetimeStr(act.startTime);
+  document.getElementById('edit-end').value = toLocalDatetimeStr(act.endTime);
+  document.getElementById('edit-act-msg').textContent = '';
+  calcEditDuration();
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeActivityEdit() {
+  document.getElementById('activity-edit-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  editingActivity = null;
+}
+
+function calcEditDuration() {
+  var startVal = document.getElementById('edit-start').value;
+  var endVal = document.getElementById('edit-end').value;
+  var preview = document.getElementById('edit-duration-preview');
+  if(!startVal || !endVal) { preview.textContent='—'; return; }
+  var dur = Math.floor((new Date(endVal) - new Date(startVal)) / 1000);
+  if(dur <= 0) { preview.textContent='⚠ 종료가 시작보다 앞에 있어요'; preview.style.color='#C0392B'; return; }
+  preview.style.color = dur>=180 ? '#4D826C' : '#8FAF9F';
+  preview.textContent = fmtDurLong(dur) + (dur>=180 ? ' ⭐' : ' (3분 미만)');
+}
+
+async function saveActivityEdit() {
+  if(!editingActivity) return;
+  var startVal = document.getElementById('edit-start').value;
+  var endVal = document.getElementById('edit-end').value;
+  var msg = document.getElementById('edit-act-msg');
+  if(!startVal || !endVal) { msg.textContent='⚠ 시작/종료 시간을 모두 입력해주세요'; msg.style.color='#C0392B'; return; }
+  var startIso = new Date(startVal).toISOString();
+  var endIso = new Date(endVal).toISOString();
+  var dur = Math.floor((new Date(endVal) - new Date(startVal)) / 1000);
+  if(dur <= 0) { msg.textContent='⚠ 종료 시간이 시작보다 앞에 있어요'; msg.style.color='#C0392B'; return; }
+
+  var btn = document.querySelector('#activity-edit-modal button:last-of-type');
+  btn.disabled=true; btn.textContent='저장 중...';
+  try {
+    await db.collection('users').doc(editingActivity.userId)
+      .collection('activities').doc(editingActivity.id).update({
+        startTime: startIso,
+        endTime: endIso,
+        duration: dur,
+        qualified: dur >= 180,
+        manuallyEdited: true,
+        editedAt: new Date().toISOString()
+      });
+    msg.textContent='✅ 저장됐어요!'; msg.style.color='#4D826C';
+    showToast('활동 기록이 수정됐어요');
+    // 캐시 업데이트
+    var act = adminCache.activities.find(function(a){ return a.id===editingActivity.id; });
+    if(act) { act.startTime=startIso; act.endTime=endIso; act.duration=dur; act.qualified=dur>=180; }
+    setTimeout(function(){
+      closeActivityEdit();
+      renderTeachers();
+      renderOv();
+    }, 800);
+  } catch(e) {
+    msg.textContent='✗ 저장 실패: '+e.message; msg.style.color='#C0392B';
+  }
+  btn.disabled=false; btn.textContent='저장';
+}
 
 /* ════════════════════════════════
    ADMIN FEEDBACK & PREVIEW
@@ -2610,57 +2749,63 @@ function compressImageLogo(file) {
    UNLOAD / VISIBILITY HANDLER
 ════════════════════════════════ */
 
-// 창 닫기 / 탭 전환 / 새로고침 시 동기적으로 기록 (sendBeacon 사용)
-function syncEndActivity() {
+var PENDING_KEY = 'ss_pending_activity';
+
+// 미완료 활동을 localStorage에 저장 (페이지 닫혀도 유실 안 됨)
+function savePendingActivity() {
   if (!currentActivityId || !actStartTime || !currentUser) return;
   var dur = Math.floor((Date.now() - actStartTime) / 1000);
   if (dur < 1) return;
-  // Firestore REST API로 동기 기록 (sendBeacon은 비동기 fetch 불가)
-  var projectId = 'saisai-wellness';
-  var docPath = 'users/' + currentUser + '/activities/' + currentActivityId;
-  var url = 'https://firestore.googleapis.com/v1/projects/' + projectId + '/databases/(default)/documents/' + docPath + '?updateMask.fieldPaths=endTime&updateMask.fieldPaths=duration&updateMask.fieldPaths=qualified';
-  var body = JSON.stringify({
-    fields: {
-      endTime: { stringValue: new Date().toISOString() },
-      duration: { integerValue: String(dur) },
-      qualified: { booleanValue: dur >= 180 }
-    }
-  });
-  // sendBeacon으로 페이지 닫혀도 전송
-  var blob = new Blob([body], { type: 'application/json' });
-  navigator.sendBeacon(
-    'https://firestore.googleapis.com/v1/projects/' + projectId + '/databases/(default)/documents/' + docPath,
-    blob
-  );
-  // 일반 상황에선 SDK로도 처리
   try {
-    if (db && currentActivityId) {
-      db.collection('users').doc(currentUser).collection('activities').doc(currentActivityId).update({
-        endTime: new Date().toISOString(),
-        duration: dur,
-        qualified: dur >= 180
-      });
-    }
+    localStorage.setItem(PENDING_KEY, JSON.stringify({
+      userId: currentUser,
+      activityId: currentActivityId,
+      endTime: new Date().toISOString(),
+      duration: dur,
+      qualified: dur >= 180
+    }));
   } catch(e) {}
   currentActivityId = null;
   actStartTime = null;
 }
 
+// 앱 로드 시 미완료 활동 Firebase에 업로드
+async function flushPendingActivity() {
+  try {
+    var raw = localStorage.getItem(PENDING_KEY);
+    if (!raw) return;
+    var p = JSON.parse(raw);
+    if (!p || !p.userId || !p.activityId) { localStorage.removeItem(PENDING_KEY); return; }
+    await db.collection('users').doc(p.userId)
+      .collection('activities').doc(p.activityId).update({
+        endTime: p.endTime,
+        duration: p.duration,
+        qualified: p.qualified
+      });
+    localStorage.removeItem(PENDING_KEY);
+    console.log('미완료 활동 기록 완료:', p.duration + '초');
+  } catch(e) {
+    console.warn('pending flush 실패:', e);
+  }
+}
+
 // 창 닫기 / 새로고침
 window.addEventListener('beforeunload', function() {
-  syncEndActivity();
+  savePendingActivity();
 });
 
-// 탭 숨김 (다른 탭으로 이동, 앱 스위치)
+// 탭 숨김 → 저장, 다시 보임 → 업로드
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'hidden') {
-    syncEndActivity();
+    savePendingActivity();
+  } else if (document.visibilityState === 'visible') {
+    flushPendingActivity();
   }
 });
 
-// 모바일 앱 백그라운드
+// 모바일 앱 전환
 window.addEventListener('pagehide', function() {
-  syncEndActivity();
+  savePendingActivity();
 });
 
 /* ════════════════════════════════
@@ -2893,6 +3038,7 @@ var db, storage;
     storage = firebase.storage();
     console.log("Firebase 초기화 완료");
     loadSavedLogo();
+    flushPendingActivity(); // 이전 미완료 활동 업로드
   } catch(e) {
     console.error("Firebase 초기화 실패:", e);
   }
