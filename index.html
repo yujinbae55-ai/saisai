@@ -1157,69 +1157,7 @@ document.addEventListener('fullscreenchange', function() {
     icon.innerHTML = '<path d="M2 2h5M2 2v5M16 2h-5M16 2v5M2 16h5M2 16v-5M16 16h-5M16 16v-5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>';
   }
 });
-function buildSurveyUI() {
-  var pbWrap = document.getElementById('surv-prog-btns');
-  pbWrap.innerHTML = '';
-  var programs = adminCache.programs.length ? adminCache.programs : DEFAULT_PROGRAMS;
-  var opts = programs.map(function(p){return{id:p.id,label:p.title.slice(0,12)};});
-  opts.push({id:'none',label:'아직 참여 전'});
-  surveyProgId = '';
-  opts.forEach(function(opt) {
-    var b=ce('button');
-    b.style.cssText='padding:0.75rem 0.9rem;border-radius:10px;border:1.5px solid #E4EDE8;background:#fff;cursor:pointer;font-size:0.82rem;color:#6B9080;text-align:left;width:100%;transition:all 0.15s';
-    b.textContent=opt.label;
-    b.onclick=function(){
-      surveyProgId=opt.id;
-      document.querySelectorAll('#surv-prog-btns button').forEach(function(x){x.style.border='1.5px solid #E4EDE8';x.style.background='#fff';x.style.color='#6B9080';x.style.fontWeight='400';});
-      b.style.border='1.5px solid #4D826C'; b.style.background='#F0F7F3'; b.style.color='#4D826C'; b.style.fontWeight='600';
-    };
-    pbWrap.appendChild(b);
-  });
 
-  var sr = document.getElementById('star-row');
-  sr.innerHTML = ''; surveyRating = 0;
-  document.getElementById('r-lbl').textContent='';
-  var subBtn = document.getElementById('sub-btn');
-  subBtn.disabled=true; subBtn.style.opacity='0.4'; subBtn.style.cursor='not-allowed'; subBtn.textContent='별점을 선택해주세요';
-
-  for (var i=1;i<=5;i++) {
-    (function(val){
-      var s=ce('span'); s.textContent='★'; s.style.cssText='font-size:1.8rem;color:#D4E3DB;cursor:pointer;transition:all 0.12s;line-height:1';
-      s.onmouseenter=function(){document.querySelectorAll('#star-row span').forEach(function(x,idx){x.style.color=idx<val?'#6BA88A':'#D4E3DB';});};
-      s.onmouseleave=function(){document.querySelectorAll('#star-row span').forEach(function(x,idx){x.style.color=idx<surveyRating?'#4D826C':'#D4E3DB';});};
-      s.onclick=function(){
-        surveyRating=val;
-        document.querySelectorAll('#star-row span').forEach(function(x,idx){x.style.color=idx<val?'#4D826C':'#D4E3DB';});
-        document.getElementById('r-lbl').textContent=RLABELS[val-1];
-        subBtn.disabled=false; subBtn.style.opacity='1'; subBtn.style.cursor='pointer'; subBtn.textContent='제출하기';
-      };
-      sr.appendChild(s);
-    })(i);
-  }
-}
-
-async function doSubmit() {
-  if (!surveyRating) return;
-  var btn = document.getElementById('sub-btn');
-  btn.disabled=true; btn.textContent='제출 중...';
-  try {
-    await db.collection('surveys').add({
-      userId: currentUser,
-      rating: surveyRating,
-      comment: document.getElementById('surv-comment').value,
-      programId: surveyProgId,
-      createdAt: new Date().toISOString()
-    });
-    go('p-done');
-  } catch(e) {
-    btn.disabled=false; btn.style.opacity='1'; btn.textContent='제출하기';
-    showToast('오류: '+e.message);
-  }
-}
-
-/* ════════════════════════════════
-   ADMIN
-════════════════════════════════ */
 function buildAdminTabs() {
   var bar = document.getElementById('adm-tab-bar'); bar.innerHTML='';
   [['ov','개요'],['prog','프로그램 편집'],['cont','콘텐츠'],['teach','교사 관리'],['report','📋 주간 리포트'],['settings','⚙️ 설정']].forEach(function(t,i){
@@ -1270,7 +1208,7 @@ async function adminRefresh() {
     });
     adminCache.activities.sort(function(a,b){ return (b.startTime||'').localeCompare(a.startTime||''); });
 
-    renderOv(); renderContents(); renderTeachers(); renderSurveys();
+    renderOv(); renderContents(); renderTeachers();
     buildProgEditList();
     showToast('새로고침 완료!');
     initReportSelects();
@@ -1705,89 +1643,7 @@ function renderTeachers() {
 
 var surveyFilter = 'all';
 
-function renderSurveys() {
-  var surveys = adminCache.surveys;
-  var total = surveys.length;
-  var avg = total ? (surveys.reduce(function(a,s){return a+s.rating;},0)/total).toFixed(1) : null;
-  var five = surveys.filter(function(s){return s.rating===5;}).length;
 
-  // 통계 카드
-  var ss = document.getElementById('surv-stats'); ss.innerHTML='';
-  [{val:avg?'★ '+avg:'—',label:'평균 별점',c:'#4D826C'},
-   {val:total,label:'총 응답 수',c:'#1A2E24'},
-   {val:five,label:'5점 응답',c:'#4D826C'}
-  ].forEach(function(s){
-    var card=ce('div'); card.className='card'; card.style.textAlign='center';
-    card.appendChild(mk('div',{fontSize:'1.6rem',fontWeight:'700',color:s.c,letterSpacing:'-0.03em'},String(s.val)));
-    card.appendChild(mk('div',{fontSize:'0.74rem',color:'#8FAF9F',marginTop:'4px'},s.label));
-    ss.appendChild(card);
-  });
-
-  // 프로그램별 필터 버튼
-  var fb = document.getElementById('surv-filter-btns'); fb.innerHTML='';
-  var filters = [
-    {id:'all', label:'전체'},
-    {id:'1', label:'P1 몸 회복'},
-    {id:'2', label:'P2 일과중'},
-    {id:'3', label:'P3 명상'},
-    {id:'none', label:'미선택'}
-  ];
-  filters.forEach(function(f){
-    var btn = ce('button');
-    btn.style.cssText = 'padding:5px 13px;border-radius:20px;border:1px solid '+(surveyFilter===f.id?'#4D826C':'#E4EDE8')+';background:'+(surveyFilter===f.id?'#4D826C':'#fff')+';color:'+(surveyFilter===f.id?'#fff':'#8FAF9F')+';font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.14s';
-    btn.textContent = f.label;
-    // 해당 프로그램 응답 수 표시
-    var cnt = f.id==='all' ? total : surveys.filter(function(s){return (s.programId||'none')===f.id;}).length;
-    if(cnt>0) btn.textContent += ' ('+cnt+')';
-    btn.onclick = function(){ surveyFilter=f.id; renderSurveys(); };
-    fb.appendChild(btn);
-  });
-
-  // 필터 적용
-  var filtered = surveyFilter==='all' ? surveys : surveys.filter(function(s){return (s.programId||'none')===surveyFilter;});
-
-  var sl = document.getElementById('surv-list'); sl.innerHTML='';
-  if(!total){ sl.appendChild(makeEmptyBox('아직 제출된 응답이 없습니다')); return; }
-  if(!filtered.length){ sl.appendChild(makeEmptyBox('해당 프로그램 응답이 없습니다')); return; }
-
-  var PROG_COLOR = {'1':'#4D826C','2':'#3A6B57','3':'#2D5242'};
-  var PROG_LABEL = {'1':'P1 몸 회복','2':'P2 일과중','3':'P3 명상','none':'미선택'};
-  var PROG_BG = {'1':'#E8F2EE','2':'#E3F0E8','3':'#DDE9E4','none':'#F4F7F4'};
-
-  var box = ce('div'); box.style.cssText='background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden';
-  filtered.forEach(function(s,i){
-    var row = ce('div'); row.style.cssText='display:flex;align-items:center;padding:0.75rem 1rem;border-bottom:'+(i<filtered.length-1?'1px solid #F0F7F3':'none')+';gap:8px';
-    // 교사 번호
-    row.appendChild(mk('span',{fontWeight:'700',color:'#4D826C',fontSize:'0.82rem',flexShrink:'0'},'#'+s.userId));
-    // 프로그램 뱃지
-    var pid = s.programId||'none';
-    var pbdg = ce('span');
-    pbdg.style.cssText = 'font-size:0.68rem;font-weight:600;color:'+(PROG_COLOR[pid]||'#8FAF9F')+';background:'+(PROG_BG[pid]||'#F4F7F4')+';padding:3px 9px;border-radius:8px;flex-shrink:0;white-space:nowrap';
-    pbdg.textContent = PROG_LABEL[pid]||'미선택';
-    row.appendChild(pbdg);
-    // 별점
-    row.appendChild(mk('span',{color:'#F4A826',fontSize:'0.82rem',flexShrink:'0',letterSpacing:'1px'},'★'.repeat(s.rating)+'☆'.repeat(5-s.rating)));
-    // 의견
-    row.appendChild(mk('span',{flex:'1',fontSize:'0.78rem',color:'#1A2E24',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'},s.comment||'—'));
-    // 날짜
-    row.appendChild(mk('span',{fontSize:'0.7rem',color:'#B8D4C8',flexShrink:'0',whiteSpace:'nowrap'},fmtDate(s.createdAt)));
-    // 삭제
-    var del = ce('button'); del.className='del-btn'; del.textContent='삭제';
-    del.onclick = (function(sid){return function(){
-      askDel('응답 삭제','이 응답을 삭제할까요?', async function(){
-        await db.collection('surveys').doc(sid).delete();
-        closeModal(); await adminRefresh();
-      });
-    };})(s.id);
-    row.appendChild(del);
-    box.appendChild(row);
-  });
-  sl.appendChild(box);
-}
-
-/* ════════════════════════════════
-   HELPERS
-════════════════════════════════ */
 function ce(tag){return document.createElement(tag);}
 function mk(tag,styles,text){
   var e=ce(tag);
