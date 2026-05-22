@@ -299,22 +299,42 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
       <!-- 교사 소감 -->
       <div style="max-width:680px;margin:0 auto;padding:0 1.5rem 4rem">
         <div class="feedback-wrap">
-          <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:0.25rem;letter-spacing:-0.02em">이번 주 소감</p>
-          <p style="font-size:0.76rem;color:#8FAF9F;margin-bottom:1rem">이번 주 활동은 어떠셨나요?</p>
+          <!-- 이번 주 참여 프로그램 -->
+          <div id="feedback-programs" style="margin-bottom:1.25rem;display:none">
+            <p style="font-size:0.78rem;color:#8FAF9F;margin-bottom:0.6rem;line-height:1.6">
+              선생님께서 이번 주에 참여한 프로그램은
+            </p>
+            <div id="feedback-prog-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0.5rem"></div>
+            <p style="font-size:0.76rem;color:#8FAF9F">입니다 🌿</p>
+          </div>
+
+          <div style="height:1px;background:#F0F7F3;margin-bottom:1.25rem"></div>
 
           <!-- 별점 -->
-          <p style="font-size:0.76rem;font-weight:600;color:#4D826C;margin-bottom:0.5rem">별점</p>
+          <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:0.2rem;letter-spacing:-0.02em">이번 주 활동은 어떠셨나요?</p>
+          <p style="font-size:0.76rem;color:#8FAF9F;margin-bottom:0.75rem">참여하신 활동 전반에 대한 만족도를 별점으로 알려주세요</p>
           <div class="star-feedback" id="feedback-stars"></div>
-          <p id="feedback-star-label" style="font-size:0.76rem;color:#4D826C;font-weight:600;min-height:1.2em;margin-bottom:1rem"></p>
+          <p id="feedback-star-label" style="font-size:0.76rem;color:#4D826C;font-weight:600;min-height:1.4em;margin-bottom:1.25rem"></p>
+
+          <div style="height:1px;background:#F0F7F3;margin-bottom:1.25rem"></div>
 
           <!-- 소감 텍스트 -->
-          <p style="font-size:0.76rem;font-weight:600;color:#4D826C;margin-bottom:0.5rem">한 줄 소감 <span style="color:#B8D4C8;font-weight:400">(선택)</span></p>
-          <textarea id="feedback-text" rows="3" placeholder="이번 주 활동에 대한 소감을 자유롭게 적어주세요"
-            style="width:100%;border:1.5px solid #E4EDE8;border-radius:10px;padding:0.8rem;font-size:0.85rem;font-family:inherit;resize:none;color:#1A2E24;background:#FAFCFA;line-height:1.6;transition:border-color 0.15s"
+          <p style="font-size:0.88rem;font-weight:700;color:#1A2E24;margin-bottom:0.2rem;letter-spacing:-0.02em">이번 주 소감을 적어주세요!</p>
+          <div style="background:#F4F7F4;border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem">
+            <p style="font-size:0.76rem;color:#6B9080;margin:0;line-height:1.8">
+              💬 아래 내용을 참고해서 자유롭게 적어주세요<br>
+              · 일과 중에 어떤 효과를 느끼셨나요?<br>
+              · 활동이 적절한 수준에서 이루어진 것 같으셨나요?<br>
+              · 아쉬운 점이나 바라는 점이 있으신가요?
+            </p>
+          </div>
+          <textarea id="feedback-text" rows="5"
+            placeholder="예) 오후에 짧게 따라했는데 어깨가 한결 가벼워진 느낌이었어요. 강도는 적당했는데 시간이 조금 더 있었으면 좋겠다는 생각도 들었어요."
+            style="width:100%;border:1.5px solid #E4EDE8;border-radius:10px;padding:0.9rem;font-size:0.85rem;font-family:inherit;resize:none;color:#1A2E24;background:#FAFCFA;line-height:1.7;transition:border-color 0.15s"
             onfocus="this.style.borderColor='#4D826C'" onblur="this.style.borderColor='#E4EDE8'"></textarea>
 
-          <div style="display:flex;align-items:center;gap:10px;margin-top:0.75rem">
-            <button id="feedback-save-btn" onclick="saveFeedback()" style="background:#4D826C;color:#fff;border:none;border-radius:10px;padding:0.65rem 1.5rem;font-size:0.84rem;font-weight:600;cursor:pointer;font-family:inherit">소감 저장</button>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:0.85rem">
+            <button id="feedback-save-btn" onclick="saveFeedback()" style="background:#4D826C;color:#fff;border:none;border-radius:10px;padding:0.7rem 1.5rem;font-size:0.84rem;font-weight:600;cursor:pointer;font-family:inherit">소감 저장하기</button>
             <span id="feedback-msg" style="font-size:0.78rem;color:#4D826C"></span>
           </div>
         </div>
@@ -2849,6 +2869,37 @@ async function loadTeacherReport() {
       }
     }
     document.getElementById('report-rendered').innerHTML = renderedHtml;
+
+    // 이번 주 참여 프로그램 태그 표시
+    try {
+      var weekStart2 = data.weekStart;
+      var weekEnd2 = new Date(weekStart2); weekEnd2.setDate(weekEnd2.getDate()+7);
+      var userActs = [];
+      if(currentUser) {
+        var actSnap2 = await db.collection('users').doc(currentUser)
+          .collection('activities').get().catch(function(){return {docs:[]};});
+        actSnap2.docs.forEach(function(d){
+          var a = d.data();
+          if(a.startTime >= weekStart2 && a.startTime < weekEnd2.toISOString()) userActs.push(a);
+        });
+      }
+      var progSet = {};
+      userActs.forEach(function(a){
+        if(a.contentTitle) progSet[a.contentTitle] = (progSet[a.contentTitle]||0)+1;
+      });
+      var tagWrap = document.getElementById('feedback-prog-tags');
+      var progSection = document.getElementById('feedback-programs');
+      if(tagWrap && Object.keys(progSet).length > 0) {
+        tagWrap.innerHTML = '';
+        Object.keys(progSet).forEach(function(title) {
+          var tag = document.createElement('span');
+          tag.style.cssText='background:#E8F2EE;color:#2D5242;font-size:0.76rem;font-weight:600;padding:4px 12px;border-radius:20px;display:inline-block';
+          tag.textContent = title + ' ' + progSet[title] + '회';
+          tagWrap.appendChild(tag);
+        });
+        if(progSection) progSection.style.display='block';
+      }
+    } catch(e) {}
 
     // 소감 초기화
     initFeedbackStars();
