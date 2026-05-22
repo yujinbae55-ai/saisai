@@ -2405,12 +2405,23 @@ async function generateReport() {
   var weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  // 해당 주차 활동 필터
-  var acts = adminCache.activities.filter(function(a) {
-    if (String(a.userId) !== String(uid)) return false;
+  // Firebase에서 직접 최신 활동 불러오기 (캐시 대신 실시간)
+  var actsSnap = await db.collection('users').doc(uid)
+    .collection('activities')
+    .get()
+    .catch(function(){ return {docs:[]}; });
+  var allUserActs = actsSnap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+
+  // 해당 주차 필터
+  var acts = allUserActs.filter(function(a) {
+    if(!a.startTime) return false;
     var d = new Date(a.startTime);
     return d >= new Date(weekStart) && d < weekEnd;
   });
+
+  // adminCache도 최신화
+  var cachedUser = adminCache.activities.filter(function(a){ return String(a.userId)!==String(uid); });
+  adminCache.activities = cachedUser.concat(allUserActs);
 
   reportCache = { userId: uid, weekStart: weekStart, acts: acts };
 
@@ -2419,7 +2430,10 @@ async function generateReport() {
   var totalSec = acts.reduce(function(s,a){ return s+(a.duration||0); }, 0);
   var qualified = acts.filter(function(a){ return a.qualified || (a.duration&&a.duration>=180); });
   var byP = {'1':0,'2':0,'3':0};
-  acts.forEach(function(a){ if(byP[a.programId]!==undefined) byP[a.programId]++; });
+  acts.forEach(function(a){
+    var pid = String(a.programId);
+    if(byP[pid]!==undefined) byP[pid]++;
+  });
   var topP = Object.entries(byP).sort(function(a,b){return b[1]-a[1];})[0];
 
   cards.innerHTML = '';
@@ -2472,12 +2486,12 @@ async function generateReport() {
     if(poseRemove) poseRemove.style.display = 'none';
   }
 
-  // 지난 주 활동 가져오기
+  // 지난 주 활동 (이미 불러온 allUserActs에서 필터)
   var prevWeekStart = new Date(weekStart);
   prevWeekStart.setDate(prevWeekStart.getDate() - 7);
   var prevWeekEnd = new Date(weekStart);
-  var prevActs = adminCache.activities.filter(function(a) {
-    if (String(a.userId) !== String(uid)) return false;
+  var prevActs = allUserActs.filter(function(a) {
+    if(!a.startTime) return false;
     var d = new Date(a.startTime);
     return d >= prevWeekStart && d < prevWeekEnd;
   });
@@ -2537,10 +2551,12 @@ function buildSampleReport(uid, weekStart, acts, byP, totalSec, qualCount, prevA
   var contentCount={};
   var progGroup={'1':[],'2':[],'3':[]};
   acts.forEach(function(a){
-    var t=a.contentTitle||'(제목 없음)';
-    var found=progGroup[a.programId]&&progGroup[a.programId].find(function(x){return x.title===t;});
+    var pid = String(a.programId);
+    var t = a.contentTitle || '(제목 없음)';
+    if(!progGroup[pid]) return;
+    var found = progGroup[pid].find(function(x){return x.title===t;});
     if(found) found.count++;
-    else if(progGroup[a.programId]) progGroup[a.programId].push({title:t, intensity:a.intensity, count:1});
+    else progGroup[pid].push({title:t, intensity:a.intensity||'low', count:1});
   });
 
   // 이번 주 완주율
