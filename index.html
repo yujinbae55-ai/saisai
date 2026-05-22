@@ -536,9 +536,9 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
           </div>
           <p id="publish-status" style="font-size:0.74rem;margin-top:6px;min-height:1rem;color:#8FAF9F"></p>
 
-          <!-- 동작 사진 URL -->
+          <!-- 다음 주 추천 활동 사진 + 설명 -->
           <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #E4EDE8">
-            <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem">추천 동작 사진 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 선택사항</span></p>
+            <p style="font-size:0.82rem;font-weight:700;color:#1A2E24;margin-bottom:0.3rem">다음 주 추천 활동 사진 <span style="color:#8FAF9F;font-weight:400;font-size:0.74rem">— 선택사항</span></p>
             <p style="font-size:0.75rem;color:#8FAF9F;margin-bottom:0.75rem">이미지 URL을 붙여넣으면 교사 리포트에 바로 표시돼요<br><span style="color:#B8D4C8">구글 이미지 → 이미지 주소 복사 / 구글 드라이브 공유 링크도 가능해요</span></p>
             <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:0.75rem">
               <input id="pose-url-inp" class="inp" placeholder="https://... 이미지 URL 붙여넣기"
@@ -550,9 +550,16 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:#4D826C!import
                 style="display:none;background:rgba(192,57,43,0.08);color:#C0392B;border:1px solid rgba(192,57,43,0.15);border-radius:10px;padding:0.68rem 1.1rem;font-size:0.82rem;cursor:pointer;font-family:inherit;flex-shrink:0">삭제</button>
             </div>
             <!-- 미리보기 -->
-            <div id="pose-img-preview" style="display:none;border-radius:10px;overflow:hidden;max-width:240px;border:1px solid #E4EDE8">
+            <div id="pose-img-preview" style="display:none;border-radius:10px;overflow:hidden;max-width:240px;border:1px solid #E4EDE8;margin-bottom:0.75rem">
               <img id="pose-preview-img" src="" alt="미리보기" style="width:100%;display:block;object-fit:contain;background:#F4F7F4;max-height:220px"
                 onerror="this.parentElement.style.display='none'">
+            </div>
+            <!-- 사진 설명 -->
+            <label style="display:block;font-size:0.72rem;font-weight:600;color:#4D826C;margin-bottom:4px">사진 설명 <span style="color:#B8D4C8;font-weight:400">(선택)</span></label>
+            <div style="display:flex;gap:8px">
+              <input id="pose-caption-inp" class="inp" placeholder="예: 아이 자세 · 척추 이완에 좋아요"
+                style="flex:1;font-size:0.84rem">
+              <button onclick="savePoseCaption()" style="background:#E8F2EE;color:#4D826C;border:1px solid #C8DDD5;border-radius:10px;padding:0.68rem 1rem;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap">설명 저장</button>
             </div>
             <p id="pose-img-msg" style="font-size:0.72rem;color:#4D826C;margin-top:5px;min-height:1rem"></p>
           </div>
@@ -2155,7 +2162,7 @@ function previewReport() {
   if(poseUrl) {
     var imgWrap = document.createElement('div');
     imgWrap.style.cssText = 'padding:0 1.5rem 1rem';
-    imgWrap.innerHTML = '<div style="background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden"><img src="'+poseUrl+'" style="width:100%;max-height:340px;object-fit:contain;background:#F4F7F4;display:block"><div style="padding:0.65rem 1rem;background:#F4F7F4"><p style="font-size:0.78rem;color:#4D826C;font-weight:600;margin:0">🧘 이번 주 추천 동작 사진</p></div></div>';
+    imgWrap.innerHTML = '<div style="background:#fff;border:1px solid #E4EDE8;border-radius:14px;overflow:hidden"><img src="'+poseUrl+'" style="width:100%;max-height:340px;object-fit:contain;background:#F4F7F4;display:block"><div style="padding:0.65rem 1rem;background:#F4F7F4"><p style="font-size:0.78rem;color:#4D826C;font-weight:600;margin:0">🌤 다음 주 추천 활동</p><p id="pose-caption-display" style="font-size:0.76rem;color:#8FAF9F;margin:0"></p></div></div>';
     previewEl.appendChild(imgWrap);
   }
   document.getElementById('report-preview-modal').style.display = 'block';
@@ -2432,7 +2439,10 @@ async function generateReport() {
   var poseUrl = (savedSnap && savedSnap.exists) ? (savedSnap.data().poseImageUrl || '') : '';
   var poseInp = document.getElementById('pose-url-inp');
   var poseRemove = document.getElementById('pose-remove-btn');
+  var poseCaptionInp = document.getElementById('pose-caption-inp');
+  var poseCaption = (savedSnap && savedSnap.exists) ? (savedSnap.data().poseCaption || '') : '';
   if(poseInp) poseInp.value = poseUrl || '';
+  if(poseCaptionInp) poseCaptionInp.value = poseCaption;
   if(poseUrl) {
     previewPoseUrl(poseUrl);
     if(poseRemove) poseRemove.style.display = '';
@@ -2470,138 +2480,163 @@ function buildSampleReport(uid, weekStart, acts, byP, totalSec, qualCount, prevA
 
   // 지난 주 데이터
   var prevTotal = prevActs ? prevActs.length : 0;
-  var prevSec = prevActs ? prevActs.reduce(function(s,a){return s+(a.duration||0);},0) : 0;
-  var prevQual = prevActs ? prevActs.filter(function(a){return a.qualified||(a.duration&&a.duration>=180);}).length : 0;
-  var prevDays = prevActs ? new Set(prevActs.map(function(a){
+  var prevSec   = prevActs ? prevActs.reduce(function(s,a){return s+(a.duration||0);},0) : 0;
+  var prevQual  = prevActs ? prevActs.filter(function(a){return a.qualified||(a.duration&&a.duration>=180);}).length : 0;
+  var prevDays  = prevActs ? new Set(prevActs.map(function(a){
     var d=new Date(a.startTime); return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
   })).size : 0;
 
-  // 변화량 계산
+  // 변화량
   function changePct(curr, prev) {
-    if(!prev) return curr > 0 ? '신규 ✨' : '—';
-    var pct = Math.round((curr - prev) / prev * 100);
-    return pct > 0 ? '↑ '+pct+'%' : pct < 0 ? '↓ '+Math.abs(pct)+'%' : '→ 동일';
+    if(!prev) return curr>0?'신규 ✨':'—';
+    var pct=Math.round((curr-prev)/prev*100);
+    return pct>0?'↑ '+pct+'%':pct<0?'↓ '+Math.abs(pct)+'%':'→ 동일';
   }
-  var currMin = Math.round(totalSec/60);
-  var prevMin = Math.round(prevSec/60);
+  var currMin  = Math.round(totalSec/60);
+  var prevMin  = Math.round(prevSec/60);
   var currDays = Object.keys(acts.reduce(function(m,a){
     var d=new Date(a.startTime); m[d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()]=1; return m;
   },{})).length;
 
-  // 프로그램별 참여 내역 (contentTitle 기준)
-  var contentCount = {};
+  // 시간대 분석
+  var hourBucket={};
+  acts.forEach(function(a){ var h=new Date(a.startTime).getHours(); hourBucket[h]=(hourBucket[h]||0)+1; });
+  var peakH=Object.entries(hourBucket).sort(function(a,b){return b[1]-a[1];})[0];
+  function timeLabel(h){
+    h=parseInt(h);
+    if(h>=6&&h<9)   return '오전 등원 준비 시간대';
+    if(h>=9&&h<12)  return '오전 활동 시간대';
+    if(h>=12&&h<14) return '점심 시간대';
+    if(h>=14&&h<17) return '오후 14~17시 사이, 자유놀이나 귀가 준비 틈';
+    if(h>=17&&h<20) return '퇴근 전후 시간대';
+    return '저녁 시간대';
+  }
+  var peakLabel = peakH ? timeLabel(peakH[0]) : '다양한';
+
+  // 프로그램별 콘텐츠 내역
+  var contentCount={};
+  var progGroup={'1':[],'2':[],'3':[]};
   acts.forEach(function(a){
-    var t = a.contentTitle || '';
-    contentCount[t] = (contentCount[t]||0)+1;
+    var t=a.contentTitle||'(제목 없음)';
+    var found=progGroup[a.programId]&&progGroup[a.programId].find(function(x){return x.title===t;});
+    if(found) found.count++;
+    else if(progGroup[a.programId]) progGroup[a.programId].push({title:t, intensity:a.intensity, count:1});
   });
 
-  // 프로그램별 그룹핑
-  var progGroup = {'1':[],'2':[],'3':[]};
-  acts.forEach(function(a){
-    if(progGroup[a.programId] !== undefined) {
-      var t = a.contentTitle || '(제목 없음)';
-      var found = progGroup[a.programId].find(function(x){return x.title===t;});
-      if(found) found.count++;
-      else progGroup[a.programId].push({title:t, intensity:a.intensity, count:1});
-    }
-  });
+  // 이번 주 완주율
+  var totalActs = acts.length;
+  var qualRate = totalActs>0 ? Math.round(qualCount/totalActs*100) : 0;
 
   // 가장 많이 참여한 프로그램
-  var topProg = Object.entries(byP).sort(function(a,b){return b[1]-a[1];})[0][0];
-  var tip = YOGA_TIPS[topProg] ? YOGA_TIPS[topProg][0] : YOGA_TIPS['1'][0];
+  var topProg=Object.entries(byP).sort(function(a,b){return b[1]-a[1];})[0][0];
+  var topProgInfo=PROG_INFO[topProg]||PROG_INFO['1'];
 
-  // 덜 참여한 프로그램 추천
-  var leastProg = Object.entries(byP).sort(function(a,b){return a[1]-b[1];})[0][0];
-  var nextTip = YOGA_TIPS[leastProg] ? YOGA_TIPS[leastProg][0] : YOGA_TIPS['3'][0];
-  var nextProgInfo = PROG_INFO[leastProg] || PROG_INFO['3'];
+  // 부위 멘트 (프로그램별)
+  var bodyMemo={
+    '1':'목·어깨·손목은 유아교사에게 피로가 쌓이기 쉬운 부위예요.\n이번 주는 자연스럽게 그 부분을 풀어주는 활동으로 채워졌네요.',
+    '2':'아이들과 함께하는 전이 순간을 즐거운 연결로 만드셨어요.\n교사도 아이도 함께 에너지를 나눈 시간이었을 거예요.',
+    '3':'잠깐의 호흡이 하루를 정돈해줬을 거예요.\n마음챙김을 실천하신 한 주였어요.'
+  };
+  var bodyMemoText = bodyMemo[topProg] || bodyMemo['1'];
 
-  // 시간대 분석
-  var hourBucket = {};
-  acts.forEach(function(a){ var h=new Date(a.startTime).getHours(); hourBucket[h]=(hourBucket[h]||0)+1; });
-  var peakH = Object.entries(hourBucket).sort(function(a,b){return b[1]-a[1];})[0];
-  var peakLabel = peakH ? (function(h){
-    h=parseInt(h);
-    if(h>=6&&h<9) return '등원 준비 시간대 (6~9시)';
-    if(h>=9&&h<12) return '오전 활동 시간대 (9~12시)';
-    if(h>=12&&h<14) return '점심 시간대 (12~14시)';
-    if(h>=14&&h<17) return '오후 활동 시간대 (14~17시)';
-    if(h>=17&&h<20) return '퇴근 전후 시간대 (17~20시)';
-    return '저녁 시간대 (20시 이후)';
-  })(peakH[0]) : '—';
-
-  var lines = [];
-  lines.push('# 🌿 사이사이 주간 웰니스 리포트');
-  lines.push('');
-  lines.push('**교사 #'+uid+'** | '+dateRange);
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## 📊 이번 주 활동 한눈에 보기');
-  lines.push('');
-  lines.push('| 항목 | 이번 주 | 지난 주 | 변화 |');
-  lines.push('|------|--------|--------|------|');
-  lines.push('| 총 활동 횟수 | '+acts.length+'회 | '+prevTotal+'회 | '+changePct(acts.length, prevTotal)+' |');
-  lines.push('| 누적 시간 | '+currMin+'분 | '+prevMin+'분 | '+changePct(currMin, prevMin)+' |');
-  lines.push('| 충분한 참여 (3분+) | '+qualCount+'회 ⭐ | '+prevQual+'회 | '+changePct(qualCount, prevQual)+' |');
-  lines.push('| 활동 일수 | '+currDays+'일 | '+prevDays+'일 | '+changePct(currDays, prevDays)+' |');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## 🎯 이번 주 참여 프로그램');
-  lines.push('');
-  lines.push('> 주로 **'+peakLabel+'** 에 활동하셨어요');
-  lines.push('');
-
-  ['1','2','3'].forEach(function(pid){
-    if(!byP[pid]) return;
-    var info = PROG_INFO[pid];
-    lines.push('**'+info.sub+'** *('+info.title+')* — '+byP[pid]+'회');
-    progGroup[pid].forEach(function(item){
-      var intLabel = item.intensity==='low'?'저강도':'고강도';
-      lines.push('- '+item.title+' ('+intLabel+') × '+item.count+'회');
-    });
-    lines.push('');
+  // 다음 주 추천 (덜 참여한 프로그램)
+  var leastProg=Object.entries(byP).sort(function(a,b){return a[1]-b[1];})[0][0];
+  var leastProgInfo=PROG_INFO[leastProg]||PROG_INFO['3'];
+  var nextContent=YOGA_TIPS[leastProg]?YOGA_TIPS[leastProg][0]:YOGA_TIPS['3'][0];
+  // 미참여 프로그램 목록
+  var unvisited=Object.entries(byP).filter(function(e){return e[1]===0;}).map(function(e){
+    var info=PROG_INFO[e[0]];
+    var tips=YOGA_TIPS[e[0]]||[];
+    return info.sub+' ('+tips.map(function(t){
+      var letter=Object.keys(CONTENT_MAP).find(function(k){return CONTENT_MAP[k].name===t.content.replace(/^[A-F]\. /,'');});
+      return letter?letter:'';
+    }).filter(Boolean).join(', ')+')';
   });
 
-  lines.push('---');
-  lines.push('');
-  lines.push('## 🧘 이번 주 추천 동작');
-  lines.push('');
-  lines.push('**'+tip.content+'** 를 가장 많이 하셨네요.');
-  lines.push('이 동작과 함께하면 좋은 자세를 소개해요.');
-  lines.push(''); // 이미지 삽입 위치
-  lines.push('');
-  lines.push('**'+tip.pose+'**');
-  lines.push('- 🎯 주요 부위: '+tip.area);
-  lines.push('- ✨ 효과: '+tip.effect);
-  lines.push('- ⏱ 권장 시간: 3~5분');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## 🌤 다음 주 활동 추천');
-  lines.push('');
-  if(byP[leastProg] === 0) {
-    lines.push('이번 주 아직 참여하지 않으신 **'+nextProgInfo.sub+'**,');
-    lines.push('*('+nextProgInfo.title+')* 를 다음 주에 한 번 경험해보시는 건 어떨까요?');
-    lines.push('');
-    lines.push('**'+nextTip.content+'** 로 가볍게 시작해보세요 🍃');
+  var L=[];
+  L.push('# 🌿 사이사이 주간 웰니스 리포트');
+  L.push('');
+  L.push('**교사 #'+uid+'** | '+dateRange);
+  L.push('');
+  L.push('---');
+  L.push('');
+  L.push('## 📊 이번 주 활동 한눈에 보기');
+  L.push('');
+  L.push('| 항목 | 이번 주 | 지난 주 | 변화 |');
+  L.push('|------|--------|--------|------|');
+  L.push('| 총 활동 횟수 | '+acts.length+'회 | '+prevTotal+'회 | '+changePct(acts.length,prevTotal)+' |');
+  L.push('| 누적 시간 | '+currMin+'분 | '+prevMin+'분 | '+changePct(currMin,prevMin)+' |');
+  L.push('| 충분한 참여 (3분+) | '+qualCount+'회 ⭐ | '+prevQual+'회 | '+changePct(qualCount,prevQual)+' |');
+  L.push('| 활동 일수 | '+currDays+'일 | '+prevDays+'일 | '+changePct(currDays,prevDays)+' |');
+  L.push('');
+  L.push('---');
+  L.push('');
+  L.push('## 🎯 이번 주 참여 프로그램');
+  L.push('');
+  L.push('> '+peakLabel+'을 활용하셨네요.');
+  L.push('');
+  ['1','2','3'].forEach(function(pid){
+    if(!byP[pid]) return;
+    var info=PROG_INFO[pid];
+    L.push('**'+info.sub+'** *('+info.title+')* — '+byP[pid]+'회');
+    (progGroup[pid]||[]).forEach(function(item){
+      var intLabel=item.intensity==='low'?'저강도':'고강도';
+      L.push('- '+item.title+' ('+intLabel+') × '+item.count+'회');
+    });
+    L.push('');
+  });
+  L.push('---');
+  L.push('');
+  L.push('## 🧘 이번 주 돌아보기');
+  L.push('');
+  if(totalActs>0){
+    L.push('**✅ '+totalActs+'회 참여 · 완주율 '+qualRate+'%**');
+    L.push('');
+    if(qualRate>=80){
+      L.push('> 참여한 활동의 대부분을 3분 이상 완수하셨어요.');
+    } else if(qualRate>=50){
+      L.push('> 절반 이상의 활동을 충분히 참여하셨어요.');
+    } else {
+      L.push('> 짧게라도 참여하신 것 자체가 의미 있어요.');
+    }
+    L.push('');
+    L.push('이번 주 주로 선택하신 건 **'+topProgInfo.sub+'** 유형이에요.');
+    L.push('');
+    bodyMemoText.split('\n').forEach(function(line){ L.push(line); });
   } else {
-    lines.push('이번 주보다 **'+nextProgInfo.sub+'** 를 조금 더 늘려보시는 건 어떨까요?');
-    lines.push('');
-    lines.push('**'+nextTip.content+'** 로 새로운 루틴을 만들어보세요 🍃');
+    L.push('이번 주 아직 기록된 활동이 없어요.');
+    L.push('작은 시작이 큰 변화를 만들어요 💚');
   }
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## 💌 이번 주 응원');
-  lines.push('');
-  lines.push('이번 주도 수고 많으셨어요.');
-  lines.push('다음 주도 사이사이에서 함께할게요 🌿');
-  lines.push('');
-  lines.push('---');
-  lines.push('*사이사이 웰니스 프로그램 | 유아교사 주간 리포트*');
+  L.push('');
+  L.push('---');
+  L.push('');
+  L.push('## 🌤 다음 주 활동 제안');
+  L.push('');
+  if(unvisited.length>0){
+    L.push('이번 주 참여하지 않은 유형은 **'+unvisited.join('**, **')+'** 예요.');
+    L.push('');
+  }
+  L.push('다음 주엔 **'+nextContent.content+'** 을 한 번 끼워보시는 건 어떨까요?');
+  L.push('');
+  L.push('활동 후반이나 퇴근 직전에 짧게 넣기 좋아요💓');
+  L.push('');
+  L.push('---');
+  L.push('');
+  L.push('## 💌 이번 주 기록');
+  L.push('');
+  if(prevTotal===0 && acts.length>0){
+    L.push('첫 주부터 '+acts.length+'회, 참여해주셨어요.');
+  } else if(acts.length>prevTotal){
+    L.push('지난 주보다 '+(acts.length-prevTotal)+'회 더 참여하셨어요.');
+  } else {
+    L.push('이번 주도 함께해주셔서 감사해요.');
+  }
+  L.push('다음 주도 사이사이에서 함께할게요 🌿');
+  L.push('');
+  L.push('---');
+  L.push('*사이사이 웰니스 프로그램 | 유아교사 주간 리포트*');
 
-  return lines.join('\n');
+  return L.join('\n');
 }
 
 function resetReportContent() {
@@ -2791,22 +2826,25 @@ async function loadTeacherReport() {
     document.getElementById('report-notion-body').style.display = 'block';
     var renderedHtml = renderMarkdown(data.content || '');
     var poseUrl = data.poseImageUrl || '';
-    // "이 동작과 함께하면 좋은 자세를 소개해요" 문구 뒤에 이미지 삽입
+    var poseCaption = data.poseCaption || '';
+    // 이미지를 🌤 다음 주 활동 제안 h2 바로 다음에 삽입
     if(poseUrl) {
-      var imgHtml = '<div style="margin:0.75rem 0 1rem;border-radius:12px;overflow:hidden;border:1px solid #E4EDE8">'
-        + '<img src="'+poseUrl+'" alt="추천 동작" style="width:100%;max-height:340px;object-fit:contain;background:#F4F7F4;display:block">'
-        + '</div>';
-      // "소개해요." 문구 뒤에 삽입
-      if(renderedHtml.includes('소개해요.')) {
+      var captionPart = poseCaption
+        ? '<div style="padding:0.55rem 1rem;background:#F4F7F4"><p style="font-size:0.78rem;color:#8FAF9F;margin:0">'+poseCaption+'</p></div>'
+        : '';
+      var imgHtml = '<div style="margin:0.75rem 0 1.25rem;border-radius:12px;overflow:hidden;border:1px solid #E4EDE8">'
+        + '<img src="'+poseUrl+'" alt="다음 주 추천 활동" style="width:100%;max-height:340px;object-fit:contain;background:#F4F7F4;display:block">'
+        + captionPart + '</div>';
+      // 🌤 섹션 h2 바로 다음에 삽입
+      renderedHtml = renderedHtml.replace(
+        '<h2 class="notion-h2">🌤 다음 주 활동 제안</h2>',
+        '<h2 class="notion-h2">🌤 다음 주 활동 제안</h2>' + imgHtml
+      );
+      // 구 양식 폴백 (이전 텍스트)
+      if(renderedHtml.indexOf(imgHtml) < 0) {
         renderedHtml = renderedHtml.replace(
-          /소개해요\.<\/p>/,
-          '소개해요.</p>' + imgHtml
-        );
-      } else {
-        // 문구 없으면 🧘 섹션 뒤에 삽입
-        renderedHtml = renderedHtml.replace(
-          /(<h2 class="notion-h2">🧘[^<]*<\/h2>)/,
-          '$1' + imgHtml
+          '<h2 class="notion-h2">🌤 다음 주 활동 추천</h2>',
+          '<h2 class="notion-h2">🌤 다음 주 활동 추천</h2>' + imgHtml
         );
       }
     }
@@ -2939,6 +2977,19 @@ function previewPoseUrl(url) {
   } else {
     prev.style.display = 'none';
   }
+}
+
+async function savePoseCaption() {
+  var uid = reportCache.userId;
+  var weekStart = reportCache.weekStart;
+  if(!uid || !weekStart) { showToast('먼저 교사와 주차를 선택해주세요'); return; }
+  var caption = document.getElementById('pose-caption-inp').value.trim();
+  try {
+    await db.collection('weeklyReports').doc(uid+'_'+weekStart).update({ poseCaption: caption });
+    showToast('✅ 설명이 저장됐어요!');
+    document.getElementById('pose-img-msg').textContent = '✓ 설명 저장 완료';
+    setTimeout(function(){ document.getElementById('pose-img-msg').textContent=''; }, 2000);
+  } catch(e) { showToast('실패: '+e.message); }
 }
 
 async function savePoseUrl() {
